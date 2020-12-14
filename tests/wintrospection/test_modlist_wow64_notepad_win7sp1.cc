@@ -262,14 +262,14 @@ TEST(TestWOW64notepadPlist, Win7SP1amd64)
 
     int numProc = 0;
     auto process = process_list_next(plist);
-    if ( process == nullptr)
+    if ( process == nullptr) {
         numProc = 1; //represents system with pid = 4
-    
-    else {
+    } else {
         for (process; process != nullptr; process = process_list_next(plist)) {
             numProc++;
-            if (process_get_pid(process) == 1932 )
-            handle_proces_modlist_wow64(&kosi, process);
+            if (process_get_pid(process) == 1932 ) {
+                handle_proces_modlist_wow64(&kosi, process);
+            }
         else
             handle_proces_modlist(&kosi, process);
             free_process(process);
