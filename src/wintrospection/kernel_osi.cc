@@ -1,18 +1,22 @@
-#include "wintrospection/wintrospection.h"
 #include "kernel_osi.h"
+#include "wintrospection/wintrospection.h"
 
 bool initialize_windows_kernel_osi(struct WindowsKernelOSI* kosi,
-                                   struct WindowsKernelDetails* kdetails, uint64_t current_asid, bool pae)
+                                   struct WindowsKernelDetails* kdetails,
+                                   uint64_t current_asid, bool pae, const char* profile)
 {
     if (!kdetails || !kosi) {
         return false;
     }
     if (!(kosi->kernel_tlib) || !(kosi->pmem)) {
-        fprintf(stderr, "The kernel type library and physical memory interface must be provided\n");
+        fprintf(
+            stderr,
+            "The kernel type library and physical memory interface must be provided\n");
         return false;
     }
     if (!(kdetails->kernelbase) && !(kdetails->kpcr)) {
-        fprintf(stderr, "Either the kernel base address or the current value of kpcr must be provided\n");
+        fprintf(stderr, "Either the kernel base address or the current value of kpcr "
+                        "must be provided\n");
         return false;
     }
     if (!(kdetails->pointer_width)) {
@@ -22,31 +26,35 @@ bool initialize_windows_kernel_osi(struct WindowsKernelOSI* kosi,
 
     // Create a virtual memory interface using the specified asid
     if (kdetails->pointer_width == 8) {
-        kosi->system_vmem = std::make_shared<VirtualMemory>(kosi->pmem, 64, current_asid, pae);
+        kosi->system_vmem =
+            std::make_shared<VirtualMemory>(kosi->pmem, 64, current_asid, pae);
     } else if (kdetails->pointer_width == 4) {
-        kosi->system_vmem = std::make_shared<VirtualMemory>(kosi->pmem, 32, current_asid, pae);
+        kosi->system_vmem =
+            std::make_shared<VirtualMemory>(kosi->pmem, 32, current_asid, pae);
     } else {
         return false;
     }
 
     // Find the base address of the kernel
     if (!(kdetails->kernelbase)) {
-        if (!find_kernel_base(kosi->system_vmem.get(), kdetails->kpcr, &(kdetails->kernelbase))) {
+        if (!find_kernel_base(kosi->system_vmem.get(), kdetails->kpcr,
+                              &(kdetails->kernelbase))) {
             fprintf(stderr, "Scan for kernel base failed\n");
             return false;
         }
     }
     // Find the KDBG structure
     if (!(kdetails->kdbg)) {
-        if (!scan_for_kdbg(kosi->system_vmem.get(), kdetails->kernelbase, &(kdetails->kdbg))) {
+        if (!scan_for_kdbg(kosi->system_vmem.get(), kdetails->kernelbase,
+                           &(kdetails->kdbg))) {
             fprintf(stderr, "Failed to find KDBG\n");
             return false;
         }
     }
 
     if (!(kdetails->PsActiveProcessHead)) {
-      kdetails->PsActiveProcessHead = get_address_active_process_head(
-          kosi->system_vmem.get(), kdetails->kdbg);
+        kdetails->PsActiveProcessHead =
+            get_address_active_process_head(kosi->system_vmem.get(), kdetails->kdbg);
     }
 
     if (!(kdetails->version64)) {
@@ -56,36 +64,54 @@ bool initialize_windows_kernel_osi(struct WindowsKernelOSI* kosi,
         }
     }
     kosi->details = kdetails;
-    return true;
-}
 
+    bool found_system_process = false;
+    auto plist = get_process_list(kosi);
+    if (plist) {
+        struct WindowsProcess* p = nullptr;
+        do {
+            auto p = process_list_next(plist);
+            if (process_get_pid(p) == 4) {
+                kdetails->system_eprocess = process_get_eprocess(p);
+                kosi->system_vmem->set_asid(process_get_asid(p));
+                found_system_process = true;
+                break;
+            }
+            free_process(p);
+        } while (plist != nullptr);
+        free_process_list(plist);
+    }
+
+    return found_system_process;
+}
 
 bool find_kernel_base_i386(VirtualMemory* vmem, vm_addr_t kpcr, vm_addr_t* base)
 {
     vm_addr_t kpcr_self = 0;
-    auto status = vmem->read_pointer(kpcr + static_offsets::i386::KPCR_SELF_OFFSET,
-                                     &kpcr_self);
+    auto status =
+        vmem->read_pointer(kpcr + static_offsets::i386::KPCR_SELF_OFFSET, &kpcr_self);
     if (TSTAT_SUCCESS != status) {
         fprintf(stderr, "Failed to read KPCR.Self (%lx)\n", kpcr);
         return false;
     }
-    
+
     if (kpcr_self != kpcr) {
-        fprintf(stderr, "KPCR failed self-validation check (%lx vs %lx)\n", kpcr, kpcr_self);
+        fprintf(stderr, "KPCR failed self-validation check (%lx vs %lx)\n", kpcr,
+                kpcr_self);
         return false;
     }
 
     vm_addr_t current_prcb = 0;
-    status = vmem->read_pointer(
-        kpcr + static_offsets::i386::KPCR_CURRENT_PRCB_OFFSET, &current_prcb);
+    status = vmem->read_pointer(kpcr + static_offsets::i386::KPCR_CURRENT_PRCB_OFFSET,
+                                &current_prcb);
     if (TSTAT_SUCCESS != status) {
         fprintf(stderr, "Failed to read KPCR.CurrentPrcb\n");
         return false;
     }
 
     vm_addr_t idle_thread = 0;
-    status = vmem->read_pointer(
-        current_prcb + static_offsets::i386::KPRCB_IDLE_THREAD, &idle_thread);
+    status = vmem->read_pointer(current_prcb + static_offsets::i386::KPRCB_IDLE_THREAD,
+                                &idle_thread);
 
     if (TSTAT_SUCCESS != status) {
         fprintf(stderr, "Failed to read IdleThread from KPRCB\n");
@@ -104,7 +130,7 @@ bool find_kernel_base_i386(VirtualMemory* vmem, vm_addr_t kpcr, vm_addr_t* base)
                 return true;
             }
             scanner -= 0x1000;
-        } catch(...) {
+        } catch (...) {
             break;
         }
     }
@@ -112,33 +138,33 @@ bool find_kernel_base_i386(VirtualMemory* vmem, vm_addr_t kpcr, vm_addr_t* base)
     return false;
 }
 
-
 bool find_kernel_base_amd64(VirtualMemory* vmem, vm_addr_t kpcr, vm_addr_t* base)
 {
     vm_addr_t kpcr_self = 0;
-    auto status = vmem->read_pointer(kpcr + static_offsets::amd64::KPCR_SELF_OFFSET,
-                                     &kpcr_self);
+    auto status =
+        vmem->read_pointer(kpcr + static_offsets::amd64::KPCR_SELF_OFFSET, &kpcr_self);
     if (TSTAT_SUCCESS != status) {
         fprintf(stderr, "Failed to read KPCR.Self (%lx)\n", kpcr);
         return false;
     }
-    
+
     if (kpcr_self != kpcr) {
-        fprintf(stderr, "KPCR failed self-validation check (%lx vs %lx)\n", kpcr, kpcr_self);
+        fprintf(stderr, "KPCR failed self-validation check (%lx vs %lx)\n", kpcr,
+                kpcr_self);
         return false;
     }
 
     vm_addr_t current_prcb = 0;
-    status = vmem->read_pointer(
-        kpcr + static_offsets::amd64::KPCR_CURRENT_PRCB_OFFSET, &current_prcb);
+    status = vmem->read_pointer(kpcr + static_offsets::amd64::KPCR_CURRENT_PRCB_OFFSET,
+                                &current_prcb);
     if (TSTAT_SUCCESS != status) {
         fprintf(stderr, "Failed to read KPCR.CurrentPrcb\n");
         return false;
     }
 
     vm_addr_t idle_thread = 0;
-    status = vmem->read_pointer(
-        current_prcb + static_offsets::amd64::KPRCB_IDLE_THREAD, &idle_thread);
+    status = vmem->read_pointer(current_prcb + static_offsets::amd64::KPRCB_IDLE_THREAD,
+                                &idle_thread);
 
     if (TSTAT_SUCCESS != status) {
         fprintf(stderr, "Failed to read IdleThread from KPRCB\n");
@@ -157,7 +183,7 @@ bool find_kernel_base_amd64(VirtualMemory* vmem, vm_addr_t kpcr, vm_addr_t* base
                 return true;
             }
             scanner -= 0x1000;
-        } catch(...) {
+        } catch (...) {
             break;
         }
     }
@@ -182,7 +208,7 @@ bool scan_for_kdbg(VirtualMemory* vmem, vm_addr_t kernel_base, vm_addr_t* kdbg)
     vm_addr_t scanner = kernel_base;
     uint8_t ptr_width = vmem->get_pointer_width();
     vm_addr_t offset = (ptr_width == 4) ? static_offsets::i386::KDBG_TAG_OFFSET
-                                      : static_offsets::amd64::KDBG_TAG_OFFSET;
+                                        : static_offsets::amd64::KDBG_TAG_OFFSET;
 
     if (*kdbg >= kernel_base) {
         uint32_t test = 0;

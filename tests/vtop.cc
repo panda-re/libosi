@@ -1,11 +1,10 @@
-#include <stdio.h>
-#include <vector>
+#include "iohal/memory/virtual_memory.h"
+#include "offset/offset.h"
+#include "wintrospection/wintrospection.h"
 #include <cstdlib>
 #include <ctype.h>
-#include "offset/offset.h"
-#include "iohal/memory/virtual_memory.h"
-#include "wintrospection/wintrospection.h"
-
+#include <stdio.h>
+#include <vector>
 
 int main(int argc, char* argv[])
 {
@@ -20,7 +19,6 @@ int main(int argc, char* argv[])
     uint32_t target_pid = std::atoi(argv[4]);
     uint64_t addr = std::strtoull(argv[5], NULL, 16);
     uint64_t size = atoi(argv[6]);
-
 
     struct WindowsKernelDetails kdetails = {0};
     struct WindowsKernelOSI kosi = {0};
@@ -39,7 +37,7 @@ int main(int argc, char* argv[])
         fprintf(stderr, "Failed to load type library\n");
         return 2;
     }
-    if (!initialize_windows_kernel_osi(&kosi, &kdetails, asid, false)) {
+    if (!initialize_windows_kernel_osi(&kosi, &kdetails, asid, false, "windows-64-7sp1")) {
         fprintf(stderr, "Failed to initialize windows\n");
         return 3;
     }
@@ -63,7 +61,7 @@ int main(int argc, char* argv[])
     fprintf(stderr, "Starting with pid %u\n", target_pid);
 
     auto bytes = std::vector<uint8_t>(size);
-    ProcessOSI posi = {0};
+    struct WindowsProcessOSI posi = {0};
     if (!init_process_osi(&kosi, &posi, process_get_eprocess(process))) {
         fprintf(stderr, "Failed to init process introspection\n");
         return 6;
@@ -78,13 +76,13 @@ int main(int argc, char* argv[])
     size_t bytes_written = 0;
     while (bytes_written < size) {
         fprintf(stderr, "%016lx: ", addr);
-        for (size_t ix=0; ix < 16 && bytes_written < size; ++ix) {
+        for (size_t ix = 0; ix < 16 && bytes_written < size; ++ix) {
             fprintf(stderr, "%02x ", bytes[bytes_written]);
             bytes_written += 1;
         }
         fprintf(stderr, "| ");
-        for (size_t jx=0; jx < 16; ++jx) {
-            char c= bytes[bytes_written-16 + jx];
+        for (size_t jx = 0; jx < 16; ++jx) {
+            char c = bytes[bytes_written - 16 + jx];
             if (isprint(c)) {
                 fprintf(stderr, "%c", c);
             } else {
@@ -94,7 +92,5 @@ int main(int argc, char* argv[])
         fprintf(stderr, "\n");
     }
 
-
     return 0;
 }
-

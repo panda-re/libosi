@@ -77,6 +77,7 @@ set(WINTRO_SRCS src/wintrospection/kernel_osi.h
                 src/wintrospection/kernel_osi.cc
                 src/wintrospection/windows_static_offsets.h
                 src/wintrospection/api.cc
+                src/wintrospection/windows_handles.cc
                 src/wintrospection/mem_pe/mem_pe.cc)
 
 # Compile all the .o files once

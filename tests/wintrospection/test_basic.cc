@@ -1,6 +1,6 @@
-#include "gtest/gtest.h"
 #include "offset/offset.h"
 #include "wintrospection/wintrospection.h"
+#include "gtest/gtest.h"
 
 TEST(WintroBasicTest, Ctors)
 {

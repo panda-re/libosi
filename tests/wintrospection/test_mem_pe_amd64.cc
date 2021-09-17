@@ -1,10 +1,10 @@
-#include <unistd.h>
-#include <set>
-#include "gtest/gtest.h"
 #include "offset/offset.h"
-#include <iohal/memory/virtual_memory.h>
-#include "wintrospection/wintrospection.h"
 #include "wintrospection/pe.h"
+#include "wintrospection/wintrospection.h"
+#include "gtest/gtest.h"
+#include <iohal/memory/virtual_memory.h>
+#include <set>
+#include <unistd.h>
 
 #include <iostream>
 #include <map>
@@ -12,7 +12,6 @@
 #include "wintrospection/utils.h"
 
 char* testfile = nullptr;
-
 
 TEST(TestAmd64MemPE, Win7SP1Amd64)
 {
@@ -31,11 +30,10 @@ TEST(TestAmd64MemPE, Win7SP1Amd64)
     kosi.kernel_tlib = load_type_library("windows-64-7sp1");
     ASSERT_TRUE(kosi.pmem != nullptr) << "failed to load physical memory snapshot";
     ASSERT_TRUE(kosi.kernel_tlib != nullptr) << "failed to load type library";
-    ASSERT_TRUE(initialize_windows_kernel_osi(&kosi, &kdetails, asid, pae))
+    ASSERT_TRUE(initialize_windows_kernel_osi(&kosi, &kdetails, asid, pae, "windows-64-7sp1"))
         << "Failed to initialize kernel osi";
 
-
-    ProcessOSI posi;
+    WindowsProcessOSI posi;
     ASSERT_TRUE(init_process_osi_from_pid(&kosi, &posi, 2856))
         << "Failed to initialize process OSI object";
     auto python_mem_pe = init_mem_pe(&posi, 0x400000, false);
@@ -60,4 +58,3 @@ int main(int argc, char** argv)
 
     return RUN_ALL_TESTS();
 }
-

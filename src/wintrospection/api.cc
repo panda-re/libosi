@@ -1,9 +1,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <ctype.h>
 #include <dlfcn.h>
 #include <exception>
-#include <glib.h>
 #include <libgen.h>
 #include <map>
 #include <memory>
@@ -12,38 +12,40 @@
 
 #include "iohal/memory/virtual_memory.h"
 #include "offset/offset.h"
+#include "windows_handles.h"
 #include "windows_introspection.h"
 #include "windows_static_offsets.h"
 #include "wintrospection/iterator.h"
 #include "wintrospection/ustring.h"
 #include "wintrospection/wintrospection.h"
 
-struct process_list {
+struct WindowsProcessList {
     uint64_t head;
     uint64_t ptr;
     WindowsKernelOSI* kosi;
 };
 
-struct process {
+struct WindowsProcess {
     uint64_t eprocess_address;
     char shortname[17];
+    char* cmdline;
     uint64_t pid;
     uint64_t ppid;
     uint64_t asid;
     uint64_t createtime;
+    uint64_t base_vba;
     bool is_wow64;
 };
 
-struct module_list {
-    std::shared_ptr<VirtualMemory> vmem;
-    struct StructureTypeLibrary* tlib;
+struct WindowsModuleList {
+    struct WindowsProcessOSI* posi;
     std::vector<uint64_t>* module_list;
     std::map<uint64_t, bool>* modules;
     uint16_t idx;
 };
 
 #define MAX_PATH_SIZE 4096
-struct module_entry {
+struct WindowsModuleEntry {
     uint64_t module_entry;
     uint64_t base_address;
     uint32_t checksum;
@@ -53,7 +55,14 @@ struct module_entry {
     uint16_t loadcount;
     uint32_t modulesize;
     char dllpath[MAX_PATH_SIZE];
+    char dllname[MAX_PATH_SIZE];
     bool is_wow64;
+};
+
+struct WindowsHandleObject {
+    uint8_t type_index;
+    uint64_t pointer;
+    struct WindowsProcessOSI* posi;
 };
 
 uint64_t get_next_process_link(struct WindowsKernelOSI* kosi, uint64_t start_address);
@@ -67,14 +76,14 @@ std::string maybe_parse_unicode_string(osi::ustring& ustr)
     }
 }
 
-struct process_list* get_process_list(struct WindowsKernelOSI* kosi)
+struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi)
 {
-    auto plist = new struct process_list;
+    auto plist = new struct WindowsProcessList;
+
     plist->head = kosi->details->PsActiveProcessHead;
     plist->head -= ((kosi->details->pointer_width == 8)
                         ? static_offsets::amd64::ACTIVEPROCESSLINK_OFFSET
                         : static_offsets::i386::ACTIVEPROCESSLINK_OFFSET);
-
     plist->head = get_next_process_link(kosi, plist->head);
 
     plist->ptr = 0;
@@ -92,16 +101,17 @@ uint64_t get_next_process_link(struct WindowsKernelOSI* kosi, uint64_t start_add
     for (unsigned int ix = 0; ix < 3; ++ix) {
         try {
             auto next_process = *process_itr++;
-
             auto dtb = next_process["Pcb"]["DirectoryTableBase"].getu();
             // _EPROCESS.is_valid from volatility
             if (dtb == 0 || (dtb % 0x20) != 0) {
                 continue;
             }
+
             auto peb = next_process("Peb"); // try this to see if valid process (if
                                             // invalid, will return peb address = 0)
-            if (peb.get_address() == 0 && next_process["UniqueProcessId"].getu() != 4)
+            if (peb.get_address() == 0 && next_process["UniqueProcessId"].getu() != 4) {
                 continue;
+            }
 
             return next_process.get_address();
         } catch (...) {
@@ -111,7 +121,7 @@ uint64_t get_next_process_link(struct WindowsKernelOSI* kosi, uint64_t start_add
     return 0;
 }
 
-struct process* process_list_next(struct process_list* plist)
+struct WindowsProcess* process_list_next(struct WindowsProcessList* plist)
 {
     try {
         if (plist->ptr == plist->head) {
@@ -136,16 +146,17 @@ static void sanitize_process_name(char* process_name, size_t nbytes)
         if (process_name[ix] == 0) {
             break;
         }
-        if (!g_ascii_isprint(process_name[ix])) {
+        if (!isprint(process_name[ix])) {
             process_name[ix] = '?';
         }
     }
 }
 
-struct process* create_process(struct WindowsKernelOSI* kosi, uint64_t eprocess_address)
+struct WindowsProcess* create_process(struct WindowsKernelOSI* kosi,
+                                      uint64_t eprocess_address)
 {
-    auto p = (struct process*)std::malloc(sizeof(struct process));
-    std::memset(p, 0, sizeof(struct process));
+    auto p = new WindowsProcess;
+
     p->eprocess_address = eprocess_address;
     auto vmem = kosi->system_vmem;
     auto tlib = kosi->kernel_tlib;
@@ -164,10 +175,48 @@ struct process* create_process(struct WindowsKernelOSI* kosi, uint64_t eprocess_
     } else {
         p->is_wow64 = (eproc["Wow64Process"].getu() != 0);
     }
+
+    // use correct ASID when reading from PEB
+    eproc.get_virtual_memory_shared()->set_asid(p->asid);
+
+    osi::i_t peb;
+    if (p->is_wow64) {
+        peb = eproc("Wow64Process").set_type("_PEB32");
+    } else {
+        peb = eproc("Peb");
+    }
+
+    try {
+        p->base_vba = peb["ImageBaseAddress"].getu();
+    } catch (std::runtime_error) {
+        p->base_vba = 0;
+    }
+
+    try {
+        osi::i_t params;
+        if (p->is_wow64) {
+            params = osi::i_t(peb.get_virtual_memory_shared(), peb.get_type_library(),
+                              peb["ProcessParameters"].get32(),
+                              "_RTL_USER_PROCESS_PARAMETERS");
+        } else {
+            params = peb("ProcessParameters");
+        }
+
+        auto cmdline_ustring = osi::ustring(params["CommandLine"]);
+        p->cmdline = new char[cmdline_ustring.get_maximum_length()]();
+
+        std::string cmdline = maybe_parse_unicode_string(cmdline_ustring);
+        strncpy(p->cmdline, cmdline.c_str(), cmdline_ustring.get_maximum_length() - 1);
+
+    } catch (std::runtime_error) {
+        p->cmdline = new char[1]();
+    }
+
     return p;
 }
 
-struct process* create_process_from_asid(struct WindowsKernelOSI* kosi, uint64_t asid)
+struct WindowsProcess* create_process_from_asid(struct WindowsKernelOSI* kosi,
+                                                uint64_t asid)
 {
     auto vmem = kosi->system_vmem;
     auto tlib = kosi->kernel_tlib;
@@ -247,41 +296,46 @@ uint64_t get_eproc_addr_from_asid(struct WindowsKernelOSI* kosi, uint64_t asid)
     free_process_list(plist);
     return 0;
 }
-void free_process(struct process* p)
+void free_process(struct WindowsProcess* p)
 {
     if (p) {
         delete p;
     }
 }
 
-void free_process_list(struct process_list* plist)
+void free_process_list(struct WindowsProcessList* plist)
 {
     if (plist) {
         delete plist;
     }
 }
 
-uint64_t process_get_eprocess(const struct process* plist)
+uint64_t process_get_eprocess(const struct WindowsProcess* plist)
 {
     return plist->eprocess_address;
 }
 
-uint64_t process_get_pid(const struct process* plist) { return plist->pid; }
+uint64_t process_get_pid(const struct WindowsProcess* plist) { return plist->pid; }
 
-uint64_t process_get_ppid(const struct process* plist) { return plist->ppid; }
+uint64_t process_get_ppid(const struct WindowsProcess* plist) { return plist->ppid; }
 
-const char* process_get_shortname(const struct process* p) { return p->shortname; }
+const char* process_get_shortname(const struct WindowsProcess* p) { return p->shortname; }
 
-uint64_t process_get_asid(const struct process* p) { return p->asid; }
+const char* process_get_cmdline(const struct WindowsProcess* p) { return p->cmdline; }
 
-uint64_t process_createtime(const struct process* p) { return p->createtime; }
+uint64_t process_get_asid(const struct WindowsProcess* p) { return p->asid; }
 
-bool process_is_wow64(const struct process* p) { return p->is_wow64; }
+uint64_t process_createtime(const struct WindowsProcess* p) { return p->createtime; }
 
-struct module_list* get_module_list(struct WindowsKernelOSI* kosi,
-                                    const struct process* p, uint8_t order)
+uint64_t process_get_base(const struct WindowsProcess* p) { return p->base_vba; }
+
+bool process_is_wow64(const struct WindowsProcess* p) { return p->is_wow64; }
+
+struct WindowsModuleList* get_module_list(struct WindowsKernelOSI* kosi,
+                                          uint64_t process_address, bool is_wow64)
 {
-    auto mlist = (struct module_list*)std::calloc(1, sizeof(struct module_list));
+    auto mlist =
+        (struct WindowsModuleList*)std::calloc(1, sizeof(struct WindowsModuleList));
     if (!mlist) {
         return nullptr;
     }
@@ -289,20 +343,12 @@ struct module_list* get_module_list(struct WindowsKernelOSI* kosi,
     mlist->modules = new std::map<uint64_t, bool>();
 
     // Deep copy, we are going to change the asid
-    mlist->vmem = std::make_shared<VirtualMemory>(*(kosi->system_vmem));
-    mlist->tlib = kosi->kernel_tlib;
+    mlist->posi = (struct WindowsProcessOSI*)std::calloc(1, sizeof(struct WindowsProcessOSI));
+    init_process_osi(kosi, mlist->posi, process_address);
 
-    // Access the kernel-only members to find process address space
-    // from whatever address space we are in now
-    osi::i_t proc(mlist->vmem, mlist->tlib, process_get_eprocess(p), "_EPROCESS");
-    uint64_t new_asid = proc["Pcb"]["DirectoryTableBase"].getu();
-
-    // Update this virtual memory object to use the correct ASID for this process
-    mlist->vmem->set_asid(new_asid);
     mlist->idx = 0;
-    proc = osi::i_t(mlist->vmem, mlist->tlib, process_get_eprocess(p), "_EPROCESS");
-
-    bool is_wow64 = process_is_wow64(p);
+    osi::i_t proc(mlist->posi->vmem, mlist->posi->tlib, mlist->posi->eprocess_address,
+                  "_EPROCESS");
 
     if (is_wow64) {
         try {
@@ -377,12 +423,13 @@ struct module_list* get_module_list(struct WindowsKernelOSI* kosi,
     return mlist;
 }
 
-struct module_entry* create_module_entry(struct module_list* mlist,
-                                         uint64_t module_entry_addr, bool is_wow64)
+struct WindowsModuleEntry* create_module_entry(struct WindowsModuleList* mlist,
+                                               uint64_t module_entry_addr, bool is_wow64)
 {
     if (is_wow64) {
-        auto mentry = (struct module_entry*)std::calloc(1, sizeof(struct module_entry));
-        osi::i_t data_table_entry(mlist->vmem, mlist->tlib, module_entry_addr,
+        auto mentry =
+            (struct WindowsModuleEntry*)std::calloc(1, sizeof(struct WindowsModuleEntry));
+        osi::i_t data_table_entry(mlist->posi->vmem, mlist->posi->tlib, module_entry_addr,
                                   "_LDR_DATA_TABLE_ENTRY32");
         mentry->module_entry = module_entry_addr;
         // No point if we can't capture these
@@ -403,27 +450,39 @@ struct module_entry* create_module_entry(struct module_list* mlist,
             mentry->timedatestamp = data_table_entry["TimeDateStamp"].get32();
             mentry->loadcount = data_table_entry["LoadCount"].get16();
 
+            osi::ustring dllname(data_table_entry["BaseDllName"]);
+            std::string dllname_utf8 = maybe_parse_unicode_string(dllname);
+            strncpy(mentry->dllname, dllname_utf8.c_str(), MAX_PATH_SIZE - 1);
+
             osi::ustring dllpath(data_table_entry["FullDllName"]);
             std::string dllpath_utf8 = maybe_parse_unicode_string(dllpath);
             strncpy(mentry->dllpath, dllpath_utf8.c_str(), MAX_PATH_SIZE - 1);
 
-            //fprintf(stderr, "WOW64 base_address: %lu\n", module_entry_get_base_address(mentry));
-            //fprintf(stderr, "WOW64 modulesize: %lu\n", module_entry_get_modulesize(mentry));
-            //fprintf(stderr, "WOW64 checksum: %lu\n", module_entry_get_checksum(mentry));
-            //fprintf(stderr, "WOW64 entrypoint: %lu\n", module_entry_get_entrypoint(mentry));
-            //fprintf(stderr, "WOW64 flags: %lu\n", module_entry_get_flags(mentry));
-            //fprintf(stderr, "WOW64 TimeDateStamp: %lu\n", module_entry_get_timedatestamp(mentry));
-            //fprintf(stderr, "WOW64 loadcount: %lu\n", module_entry_get_loadcount(mentry));
-            //fprintf(stderr, "WOW64 DLLPATH: %s\n", dllpath_utf8.c_str());
+            /*
+            fprintf(stderr, "WOW64 base_address: %lu\n",
+            module_entry_get_base_address(mentry));
+            fprintf(stderr, "WOW64 modulesize: %lu\n",
+            module_entry_get_modulesize(mentry));
+            fprintf(stderr, "WOW64 checksum: %lu\n", module_entry_get_checksum(mentry));
+            fprintf(stderr, "WOW64 entrypoint: %lu\n",
+            module_entry_get_entrypoint(mentry));
+            fprintf(stderr, "WOW64 flags: %lu\n", module_entry_get_flags(mentry));
+            fprintf(stderr, "WOW64 TimeDateStamp: %lu\n",
+            module_entry_get_timedatestamp(mentry));
+            fprintf(stderr, "WOW64 loadcount: %lu\n", module_entry_get_loadcount(mentry));
+            fprintf(stderr, "WOW64 DLLPATH: %s\n", dllpath_utf8.c_str());
+            */
 
         } catch (...) {
+            free_module_entry(mentry);
             return nullptr;
         }
         return mentry;
     }
 
-    auto mentry = (struct module_entry*)std::calloc(1, sizeof(struct module_entry));
-    osi::i_t data_table_entry(mlist->vmem, mlist->tlib, module_entry_addr,
+    auto mentry =
+        (struct WindowsModuleEntry*)std::calloc(1, sizeof(struct WindowsModuleEntry));
+    osi::i_t data_table_entry(mlist->posi->vmem, mlist->posi->tlib, module_entry_addr,
                               "_LDR_DATA_TABLE_ENTRY");
 
     mentry->module_entry = module_entry_addr;
@@ -450,19 +509,20 @@ struct module_entry* create_module_entry(struct module_list* mlist,
         strncpy(mentry->dllpath, dllpath_utf8.c_str(), MAX_PATH_SIZE - 1);
 
     } catch (...) {
+        free_module_entry(mentry);
         return nullptr;
     }
     return mentry;
 }
 
-void free_module_entry(struct module_entry* me)
+void free_module_entry(struct WindowsModuleEntry* me)
 {
     if (me) {
         std::free(me);
     }
 }
 
-struct module_entry* module_list_next(struct module_list* mlist)
+struct WindowsModuleEntry* module_list_next(struct WindowsModuleList* mlist)
 {
     if (mlist->module_list->size() == 0) {
         return nullptr;
@@ -472,6 +532,7 @@ struct module_entry* module_list_next(struct module_list* mlist)
 
     auto mod_address = (*(mlist->module_list))[mlist->idx++];
     bool mod_iswow64 = (*(mlist->modules))[mod_address];
+    // TOOD push this down into module_entry ctor
     auto mod_entry = create_module_entry(mlist, mod_address, mod_iswow64);
     if (!mod_entry) {
         // skip invalid
@@ -480,11 +541,17 @@ struct module_entry* module_list_next(struct module_list* mlist)
     return mod_entry;
 }
 
-void free_module_list(struct module_list* mlist)
+struct WindowsProcessOSI* module_list_get_osi(struct WindowsModuleList* mlist)
+{
+    return mlist->posi;
+}
+
+void free_module_list(struct WindowsModuleList* mlist)
 {
     if (mlist) {
-        if (mlist->vmem) {
-            mlist->vmem.reset();
+        if (mlist->posi) {
+            uninit_process_osi(mlist->posi);
+            delete mlist->posi;
         }
 
         delete mlist->module_list;
@@ -493,32 +560,49 @@ void free_module_list(struct module_list* mlist)
     }
 }
 
-uint64_t module_entry_get_base_address(struct module_entry* me)
+uint64_t module_entry_get_base_address(struct WindowsModuleEntry* me)
 {
     return me->base_address;
 }
 
-uint32_t module_entry_get_checksum(struct module_entry* me) { return me->checksum; }
+uint32_t module_entry_get_checksum(struct WindowsModuleEntry* me) { return me->checksum; }
 
-uint64_t module_entry_get_entrypoint(struct module_entry* me) { return me->entrypoint; }
+uint64_t module_entry_get_entrypoint(struct WindowsModuleEntry* me)
+{
+    return me->entrypoint;
+}
 
-uint32_t module_entry_get_flags(struct module_entry* me) { return me->flags; }
+uint32_t module_entry_get_flags(struct WindowsModuleEntry* me) { return me->flags; }
 
-uint32_t module_entry_get_timedatestamp(struct module_entry* me)
+uint32_t module_entry_get_timedatestamp(struct WindowsModuleEntry* me)
 {
     return me->timedatestamp;
 }
 
-uint16_t module_entry_get_loadcount(struct module_entry* me) { return me->loadcount; }
+uint16_t module_entry_get_loadcount(struct WindowsModuleEntry* me)
+{
+    return me->loadcount;
+}
 
-uint32_t module_entry_get_modulesize(struct module_entry* me) { return me->modulesize; }
+uint32_t module_entry_get_modulesize(struct WindowsModuleEntry* me)
+{
+    return me->modulesize;
+}
 
-bool module_entry_is_wow64(struct module_entry* me) { return me->is_wow64; }
+bool module_entry_is_wow64(struct WindowsModuleEntry* me) { return me->is_wow64; }
 
-const char* module_entry_get_dllpath(struct module_entry* me) { return me->dllpath; }
+const char* module_entry_get_dllpath(struct WindowsModuleEntry* me)
+{
+    return me->dllpath;
+}
+
+const char* module_entry_get_dllname(struct WindowsModuleEntry* me)
+{
+    return me->dllname;
+}
 
 bool init_process_osi_from_pid(struct WindowsKernelOSI* kosi,
-                               struct ProcessOSI* process_osi, uint64_t target_pid)
+                               struct WindowsProcessOSI* process_osi, uint64_t target_pid)
 {
     auto plist = get_process_list(kosi);
     if (!plist) {
@@ -540,7 +624,7 @@ bool init_process_osi_from_pid(struct WindowsKernelOSI* kosi,
     return false;
 }
 
-bool init_process_osi(struct WindowsKernelOSI* kosi, struct ProcessOSI* process_osi,
+bool init_process_osi(struct WindowsKernelOSI* kosi, struct WindowsProcessOSI* process_osi,
                       uint64_t eprocess_address)
 {
     process_osi->tlib = kosi->kernel_tlib; // TODO change if wow64
@@ -550,13 +634,13 @@ bool init_process_osi(struct WindowsKernelOSI* kosi, struct ProcessOSI* process_
     osi::i_t proc(process_osi->vmem, process_osi->tlib, eprocess_address, "_EPROCESS");
     uint64_t new_asid = proc["Pcb"]["DirectoryTableBase"].getu();
     process_osi->vmem->set_asid(new_asid);
+    // Get the basics
     process_osi->createtime = proc["CreateTime"].get64();
     process_osi->pid = proc["UniqueProcessId"].getu();
-    proc["ImageFileName"].getx(process_osi->shortname, 16);
     return true;
 }
 
-void uninit_process_osi(struct ProcessOSI* process_osi)
+void uninit_process_osi(struct WindowsProcessOSI* process_osi)
 {
     process_osi->vmem.reset(); // TODO Process OSI should be a class
                                // with a destructor
@@ -585,20 +669,86 @@ uint64_t kosi_get_current_process_address(struct WindowsKernelOSI* kosi)
     return eprocess.get_address();
 }
 
-struct process* kosi_get_current_process(struct WindowsKernelOSI* kosi)
+struct WindowsProcess* kosi_get_current_process(struct WindowsKernelOSI* kosi)
 {
     auto eprocess = kosi_get_current_process_object(kosi);
     return create_process(kosi, eprocess.get_address());
 }
 
+uint64_t kosi_get_current_tid(struct WindowsKernelOSI* kosi)
+{
+    osi::i_t kpcr(kosi->system_vmem, kosi->kernel_tlib, kosi->details->kpcr, "_KPCR");
+
+    osi::i_t ethread;
+    if (kosi->system_vmem->get_pointer_width() == 4) {
+        ethread = kpcr["PrcbData"]("CurrentThread");
+    } else {
+        ethread = kpcr["Prcb"]("CurrentThread");
+    }
+    ethread.set_type("_ETHREAD");
+
+    return ethread["Cid"]["UniqueThread"].getu();
+}
+
+struct WindowsHandleObject* resolve_handle(struct WindowsKernelOSI* kosi, uint64_t handle)
+{
+    struct WindowsProcessOSI* posi =
+        (struct WindowsProcessOSI*)std::calloc(1, sizeof(struct WindowsProcessOSI));
+    init_process_osi(kosi, posi, kosi_get_current_process_address(kosi));
+
+    osi::i_t obj_header =
+        resolve_handle_table_entry(posi, handle, kosi->details->pointer_width > 4);
+    if (!obj_header.get_address()) {
+        uninit_process_osi(posi);
+        std::free(posi);
+        return nullptr;
+    }
+
+    struct WindowsHandleObject* h =
+        (struct WindowsHandleObject*)std::calloc(1, sizeof(struct WindowsHandleObject));
+    try {
+        h->type_index = obj_header["TypeIndex"].get8();
+        h->pointer = obj_header["Body"].get_address();
+        h->posi = posi;
+    } catch (std::runtime_error) {
+        free_handle(h);
+        return nullptr;
+    }
+    return h;
+}
+
+uint64_t handle_get_pointer(struct WindowsHandleObject* handle)
+{
+    return handle->pointer;
+}
+
+uint8_t handle_get_type(struct WindowsHandleObject* handle) { return handle->type_index; }
+
+struct WindowsProcessOSI* handle_get_context(struct WindowsHandleObject* handle)
+{
+    return handle->posi;
+}
+
+void free_handle(struct WindowsHandleObject* handle)
+{
+    if (handle) {
+        if (handle->posi) {
+            uninit_process_osi(handle->posi);
+            std::free(handle->posi);
+        }
+        std::free(handle);
+    }
+}
+
 static inline uint16_t get_page_shift()
 {
-    return 12; // 4k pages
+    // For 4K pages
+    return 12;
 }
 
 const std::pair<uint64_t, uint64_t> NO_MATCH = {0, 0};
 static inline std::pair<uint64_t, uint64_t>
-find_vad_range(osi::i_t& eprocess, struct ProcessOSI* process_osi, uint64_t addr)
+find_vad_range(osi::i_t& eprocess, struct WindowsProcessOSI* process_osi, uint64_t addr)
 {
     auto page_shift = get_page_shift();
     uint64_t target_vpn = addr >> page_shift;
@@ -606,7 +756,7 @@ find_vad_range(osi::i_t& eprocess, struct ProcessOSI* process_osi, uint64_t addr
     auto working = vad_root["BalancedRoot"];
 
     while (working.get_address() != 0) {
-        // Is this the target node?
+        // Does this node contain target_vpn?
         auto starting_vpn = working["StartingVpn"].getu();
         auto ending_vpn = working["EndingVpn"].getu();
         if ((starting_vpn <= target_vpn) && (target_vpn <= ending_vpn)) {
@@ -616,29 +766,37 @@ find_vad_range(osi::i_t& eprocess, struct ProcessOSI* process_osi, uint64_t addr
                 fprintf(stderr, "Failed to read prototype pte\n");
                 return NO_MATCH;
             }
+
             uint64_t vad_offset = addr - (starting_vpn << page_shift);
             uint64_t vad_pte_index = vad_offset >> page_shift;
             uint64_t pte_addr =
                 proto_pte + (vad_pte_index * process_osi->vmem->get_pointer_width());
 
             osi::i_t mmpte(process_osi->vmem, process_osi->tlib, pte_addr, "_MMPTE");
-            try {
-                uint64_t pte = mmpte.getu();
-                return std::pair<uint64_t, uint64_t>(pte_addr, pte);
-            } catch (const std::exception& e) {
-                fprintf(stderr, "Failed to read mmpte at %lx\n", pte_addr);
+            uint64_t pte = mmpte.getu();
+            return std::pair<uint64_t, uint64_t>(pte_addr, pte);
+        }
+        // Check the left arm
+        if (target_vpn < starting_vpn) {
+            auto left_child = working("LeftChild");
+            if (left_child.get_address() == 0) {
                 return NO_MATCH;
             }
-        }
-        // check left arm
-        if (target_vpn < starting_vpn) {
-            working = working("LeftChild");
+            working = left_child;
+            continue;
         } else if (ending_vpn < target_vpn) {
-            working = working("RightChild");
+            // Check the right arm
+            auto right_child = working("RightChild");
+            if (right_child.get_address() == 0) {
+                return NO_MATCH;
+            }
+            working = right_child;
+            continue;
         } else {
             return NO_MATCH;
         }
     }
+
     return NO_MATCH;
 }
 
@@ -647,22 +805,22 @@ static bool valid_pte(uint64_t pte)
     if ((pte & (0x1 << 0)) == 1) {
         return true;
     }
-
-    // Not valid + is prototype
+    // If it is not valid and a prototype, bail
     if ((pte & (0x1 << 10)) != 0) {
         return false;
     }
-
-    // not valid and in transition
+    // if it is not valid and is in transition, good to go
     if ((pte & (0x1 << 11)) != 0) {
         return true;
     }
+
     return false;
 }
 
-TranslateStatus process_vmem_read(struct ProcessOSI* process_osi, vm_addr_t addr,
+TranslateStatus process_vmem_read(struct WindowsProcessOSI* process_osi, vm_addr_t addr,
                                   void* buffer, uint64_t size)
 {
+    // Try to read the page normally
     auto status = process_osi->vmem->read(addr, buffer, size);
     if (TRANSLATE_SUCCEEDED(status)) {
         return status;
@@ -672,33 +830,29 @@ TranslateStatus process_vmem_read(struct ProcessOSI* process_osi, vm_addr_t addr
         return status;
     }
 
-    // handle a page fault if we can
+    // Try to handle the page fault
     osi::i_t proc(process_osi->vmem, process_osi->tlib, process_osi->eprocess_address,
                   "_EPROCESS");
-    uint64_t bytes_remaining = size;
-    while (bytes_remaining > 0) {
+    uint64_t bytes_to_read = size;
+    while (bytes_to_read > 0) {
         auto vad = find_vad_range(proc, process_osi, addr);
         auto pte_addr = std::get<0>(vad);
         auto pte = std::get<1>(vad);
-
         if (!valid_pte(pte)) {
-            // fprintf(stderr, "Invalid pte at %lx -> %lx\n", pte_addr, pte);
+            fprintf(stderr, "Failed to read from pte %lx %lx!\n", pte_addr, pte);
             return TSTAT_GENERIC_FAILURE;
         }
-
         uint64_t chunk_size = 0xfff - (addr & 0xfff);
-        chunk_size = std::min(chunk_size, bytes_remaining);
+        chunk_size = std::min(chunk_size, bytes_to_read);
         if (chunk_size == 0) {
-            chunk_size = bytes_remaining;
+            chunk_size = bytes_to_read;
         }
-        uint64_t paddr = (pte & 0xffffffffff000) + (addr & 0xfff);
+        uint64_t physaddr = (pte & 0xffffffffff000) + (addr & 0xfff);
         auto pmem = process_osi->kosi->pmem;
-        pmem->read(pmem, paddr, (uint8_t*)buffer, chunk_size);
+        pmem->read(pmem, physaddr, (uint8_t*)buffer, chunk_size);
         addr += chunk_size;
         buffer = (void*)(((uint8_t*)buffer) + chunk_size);
-        bytes_remaining -= chunk_size;
+        bytes_to_read -= chunk_size;
     }
-    // fprintf(stderr, "[DEBUG] Second chance memory read worked! %lx %lu\n", addr - size,
-    // size);
     return TSTAT_SUCCESS;
 }

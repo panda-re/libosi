@@ -1,10 +1,9 @@
 #ifndef __LIBINTRO_WINDOWS_INTROSPECTION_UTILS_H
 #define __LIBINTRO_WINDOWS_INTROSPECTION_UTILS_H
 
-
-#include <iohal/memory/virtual_memory.h>
 #include "offset/offset.h"
 #include "wintrospection/i_t.h"
+#include <iohal/memory/virtual_memory.h>
 #include <set>
 
 bool find_kernel_base(VirtualMemory* vmem, vm_addr_t kpcr, vm_addr_t* base);
@@ -21,4 +20,3 @@ std::set<uint64_t> get_process_list(VirtualMemory* vmem, vm_addr_t kdbg,
 void print_process_list(std::set<uint64_t> proc_list);
 
 #endif
-

@@ -14,6 +14,7 @@ struct WindowsKernelDetails {
     uint64_t kdbg;
     uint64_t version64;
     uint64_t system_asid;
+    uint64_t system_eprocess;
 };
 
 struct WindowsKernelOSI {
@@ -23,70 +24,82 @@ struct WindowsKernelOSI {
     struct WindowsKernelDetails* details;
 };
 
-struct ProcessOSI {
+struct WindowsProcessOSI {
     struct StructureTypeLibrary* tlib;
     struct WindowsKernelOSI* kosi;
     std::shared_ptr<VirtualMemory> vmem;
     vm_addr_t eprocess_address;
     uint64_t createtime;
     uint64_t pid;
-    char shortname[17];
 };
 
 struct WindowsInstrospection;
-struct process;
-struct module_entry;
-struct process_list;
-struct module_list;
+struct WindowsProcess;
+struct WindowsModuleEntry;
+struct WindowsProcessList;
+struct WindowsModuleList;
+struct WindowsHandleObject;
 
 bool initialize_windows_kernel_osi(struct WindowsKernelOSI* kosi,
                                    struct WindowsKernelDetails* kdetails,
-                                   uint64_t current_asid, bool pae);
+                                   uint64_t current_asid, bool pae, const char* profile);
 uint64_t kosi_get_current_process_address(struct WindowsKernelOSI* kosi);
-struct process* kosi_get_current_process(struct WindowsKernelOSI* kosi);
+struct WindowsProcess* kosi_get_current_process(struct WindowsKernelOSI* kosi);
+uint64_t kosi_get_current_tid(struct WindowsKernelOSI* kosi);
 
-struct process_list* get_process_list(struct WindowsKernelOSI* kosi);
-struct process* process_list_next(struct process_list* plist);
-struct process* create_process(struct WindowsKernelOSI* kosi, uint64_t eprocess_address);
-struct process* create_process_from_asid(struct WindowsKernelOSI* kosi, uint64_t asid);
+struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi);
+struct WindowsProcess* process_list_next(struct WindowsProcessList* plist);
+struct WindowsProcess* create_process(struct WindowsKernelOSI* kosi,
+                                      uint64_t eprocess_address);
+struct WindowsProcess* create_process_from_asid(struct WindowsKernelOSI* kosi,
+                                                uint64_t asid);
 uint64_t get_pid_from_asid(struct WindowsKernelOSI* kosi, uint64_t asid);
 uint64_t get_eproc_addr_from_asid(struct WindowsKernelOSI* kosi, uint64_t asid);
-void free_process_list(struct process_list* plist);
+void free_process_list(struct WindowsProcessList* plist);
 
 bool init_process_osi_from_pid(struct WindowsKernelOSI* kosi,
-                               struct ProcessOSI* process_osi, uint64_t pid);
-bool init_process_osi(struct WindowsKernelOSI* kosi, struct ProcessOSI* process,
+                               struct WindowsProcessOSI* process_osi, uint64_t pid);
+bool init_process_osi(struct WindowsKernelOSI* kosi, struct WindowsProcessOSI* process,
                       uint64_t eprocess);
-void uninit_process_osi(struct ProcessOSI* kosi);
+void uninit_process_osi(struct WindowsProcessOSI* kosi);
 
-uint64_t process_get_eprocess(const struct process*);
-const char* process_get_shortname(const struct process*);
-uint64_t process_get_pid(const struct process*);
-uint64_t process_get_ppid(const struct process*);
-uint64_t process_get_asid(const struct process*);
-uint64_t process_createtime(const struct process*);
-
-TranslateStatus process_vmem_read(struct ProcessOSI*, vm_addr_t addr, void* buffer,
+uint64_t process_get_eprocess(const struct WindowsProcess*);
+const char* process_get_shortname(const struct WindowsProcess*);
+const char* process_get_cmdline(const struct WindowsProcess*);
+uint64_t process_get_pid(const struct WindowsProcess*);
+uint64_t process_get_ppid(const struct WindowsProcess*);
+uint64_t process_get_asid(const struct WindowsProcess*);
+uint64_t process_get_base(const struct WindowsProcess*);
+uint64_t process_createtime(const struct WindowsProcess*);
+TranslateStatus process_vmem_read(struct WindowsProcessOSI*, vm_addr_t addr, void* buffer,
                                   uint64_t size);
-
-bool process_is_wow64(const struct process*);
-void free_process(struct process*);
+bool process_is_wow64(const struct WindowsProcess*);
+void free_process(struct WindowsProcess*);
 
 const uint8_t MODULELIST_LOAD_ORDER = 0;
-struct module_list* get_module_list(struct WindowsKernelOSI* process_osi,
-                                    const struct process* p, uint8_t order);
-struct module_entry* module_list_next(struct module_list*);
-void free_module_list(struct module_list* mlist);
+struct WindowsModuleList* get_module_list(struct WindowsKernelOSI* kosi, uint64_t address,
+                                          bool iswow);
+struct WindowsModuleEntry* module_list_next(struct WindowsModuleList*);
+struct WindowsProcessOSI* module_list_get_osi(struct WindowsModuleList* mlist);
+void free_module_list(struct WindowsModuleList* mlist);
 
-uint64_t module_entry_get_base_address(struct module_entry*);
-uint32_t module_entry_get_checksum(struct module_entry*);
-uint64_t module_entry_get_entrypoint(struct module_entry*);
-uint32_t module_entry_get_flags(struct module_entry*);
-uint32_t module_entry_get_timedatestamp(struct module_entry*);
-uint16_t module_entry_get_loadcount(struct module_entry*);
-uint32_t module_entry_get_modulesize(struct module_entry*);
-bool module_entry_is_wow64(struct module_entry*);
-const char* module_entry_get_dllpath(struct module_entry*);
-void free_module_entry(struct module_entry*);
+uint64_t module_entry_get_base_address(struct WindowsModuleEntry*);
+uint32_t module_entry_get_checksum(struct WindowsModuleEntry*);
+uint64_t module_entry_get_entrypoint(struct WindowsModuleEntry*);
+uint32_t module_entry_get_flags(struct WindowsModuleEntry*);
+uint32_t module_entry_get_timedatestamp(struct WindowsModuleEntry*);
+uint16_t module_entry_get_loadcount(struct WindowsModuleEntry*);
+uint32_t module_entry_get_modulesize(struct WindowsModuleEntry*);
+bool module_entry_is_wow64(struct WindowsModuleEntry*);
+const char* module_entry_get_dllpath(struct WindowsModuleEntry*);
+const char* module_entry_get_dllname(struct WindowsModuleEntry*);
+void free_module_entry(struct WindowsModuleEntry*);
+
+struct WindowsHandleObject* resolve_handle(struct WindowsKernelOSI*, uint64_t);
+void free_handle(struct WindowsHandleObject* handle);
+
+uint64_t handle_get_pointer(struct WindowsHandleObject* handle);
+uint8_t handle_get_type(struct WindowsHandleObject* handle);
+struct WindowsProcessOSI* handle_get_context(struct WindowsHandleObject* handle);
 
 #endif
