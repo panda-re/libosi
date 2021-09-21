@@ -158,7 +158,7 @@ struct WindowsProcess* create_process(struct WindowsKernelOSI* kosi,
     auto p = new WindowsProcess;
 
     p->eprocess_address = eprocess_address;
-    auto vmem = kosi->system_vmem;
+    auto vmem = std::make_shared<VirtualMemory>(*kosi->system_vmem);
     auto tlib = kosi->kernel_tlib;
     osi::i_t eproc(vmem, tlib, eprocess_address, "_EPROCESS");
 
@@ -180,10 +180,17 @@ struct WindowsProcess* create_process(struct WindowsKernelOSI* kosi,
     eproc.get_virtual_memory_shared()->set_asid(p->asid);
 
     osi::i_t peb;
-    if (p->is_wow64) {
-        peb = eproc("Wow64Process").set_type("_PEB32");
-    } else {
-        peb = eproc("Peb");
+    try {
+        if (p->is_wow64) {
+            peb = eproc("Wow64Process").set_type("_PEB32");
+        } else {
+            peb = eproc("Peb");
+        }
+    } catch (std::runtime_error) { 
+        // bail if the PEB isn't readable. user can still see other attrs
+        p->cmdline = nullptr;
+        p->base_vba = 0;
+        return p;
     }
 
     try {
@@ -209,7 +216,7 @@ struct WindowsProcess* create_process(struct WindowsKernelOSI* kosi,
         strncpy(p->cmdline, cmdline.c_str(), cmdline_ustring.get_maximum_length() - 1);
 
     } catch (std::runtime_error) {
-        p->cmdline = new char[1]();
+        p->cmdline = nullptr;
     }
 
     return p;
@@ -300,6 +307,9 @@ void free_process(struct WindowsProcess* p)
 {
     if (p) {
         delete p;
+        if (p->cmdline) {
+            delete p->cmdline;
+        }
     }
 }
 

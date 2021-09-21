@@ -4,6 +4,6 @@
 #include "wintrospection/i_t.h"
 #include "wintrospection/wintrospection.h"
 
-osi::i_t resolve_handle_table_entry(struct WindowsProcessOSI*, uint64_t handle, bool x64);
+osi::i_t resolve_handle_table_entry(struct WindowsProcessOSI* posi, uint64_t handle, bool x64);
 
 #endif
