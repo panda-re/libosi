@@ -142,7 +142,7 @@ void handle_proces_modlist(
 
     if (candidate == EXPECTED_RESULTS.end()) {
         // fprintf(stderr, "Can't find pid %lu in dlllist\n", pid);
-        auto modlist = get_module_list(wintro, p, MODULELIST_LOAD_ORDER);
+        auto modlist = get_module_list(wintro, process_get_eprocess(p), process_is_wow64(p));
         ASSERT_TRUE(!modlist) << "found modules that don't exist for PID" << pid;
         return;
     }
@@ -150,7 +150,7 @@ void handle_proces_modlist(
     auto& entry = candidate->second;
 
     uint32_t module_count = 0;
-    auto modlist = get_module_list(wintro, p, MODULELIST_LOAD_ORDER);
+    auto modlist = get_module_list(wintro, process_get_eprocess(p), process_is_wow64(p));
 
     if (modlist) {
         auto me = module_list_next(modlist);

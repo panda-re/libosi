@@ -151,11 +151,8 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
          {0x000007fefd930000, 0x12a000, 0x8, "C:\\Windows\\system32\\WININET.dll"},
          {0x000007feff380000, 0x259000, 0x11, "C:\\Windows\\system32\\iertutil.dll"},
          {0x000007fef9800000, 0x16000, 0x1, "C:\\Windows\\system32\\Syncreg.dll"},
-         {0x000007fefb850000, 0xb000, 0x1, ""},
-         //{0x000007fefb850000,             0xb000,                0x1,
-         //"C:\\Windows\\ehome\\ehSSO.d"}, <--this unicode address was paged out when
-         //looking using volatility TODO: determine why volatility can still find this
-         //path even though buffer address is unreadable (Mod address at 0x04060A00)
+         {0x000007fefb850000, 0xb000, 0x1, "C:\\Windows\\ehome\\ehSSO.d"},
+         // ^^ This path is partially paged out
          {0x000007fef9570000, 0x28b000, 0x3, "C:\\Windows\\System32\\netshell.dll"},
          {0x000007fefafd0000, 0x27000, 0x8, "C:\\Windows\\System32\\IPHLPAPI.DLL"},
          {0x000007fefda80000, 0x8000, 0x1a, "C:\\Windows\\system32\\NSI.dll"},
@@ -322,6 +319,7 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
          {0x000007fef2800000, 0x14000, 0x1, ""},
          {0x000007fef3650000, 0x1d4000, 0x1, ""},
          {0x000007fef40c0000, 0x5ff000, 0x1, "\u45c0\u0f13"},
+         // ^^^ This needs more debugging
          {0x00000000714d0000, 0x283000, 0x1,
           "C:\\Windows\\System32\\NLSLexicons0009.dll"},
      }},
@@ -365,8 +363,9 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
          {0x000007fef1e50000, 0x99d000, 0x1,
           "C:\\Windows\\Microsoft.NET\\Framework64\\v2.0.50727\\mscorwks.dll"},
          {0x00000000700a0000, 0xc9000, 0x2,
-          "C:\\Windows\\WinSxS\\amd64_microsoft.vc80.crt_1fc8b3b9a1e18e3b_8.0.50727.4940_"
-          "none_88df89932faf0bf6\\MSVCR80.dll"},
+          "C:\\Windows\\WinSxS\\amd64_microsoft.vc80."
+          "crt_1fc8b3b9a1e18e3b_8.0.50727.4940_none_"
+          "88df89932faf0bf6\\MSVCR80.dll"},
          {0x000007fefda90000, 0xd88000, 0xb, "C:\\Windows\\system32\\shell32.dll"},
          {0x000007fefd510000, 0xf000, 0x4, "C:\\Windows\\system32\\profapi.dll"},
          {0x000007fef0f70000, 0xedc000, 0x1,
@@ -411,8 +410,9 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
          {0x000007fefd5c0000, 0x36000, 0x45, "C:\\Windows\\system32\\CFGMGR32.dll"},
          {0x000007fefd7e0000, 0x1a000, 0x8, "C:\\Windows\\system32\\DEVOBJ.dll"},
          {0x000007fefbbe0000, 0x215000, 0x4,
-          "C:\\Windows\\WinSxS\\amd64_microsoft.windows.gdiplus_6595b64144ccf1df_1.1."
-          "7601.17514_none_2b24536c71ed437a\\gdiplus.dll"},
+          "C:\\Windows\\WinSxS\\amd64_microsoft."
+          "windows.gdiplus_6595b64144ccf1df_1.1.7601."
+          "17514_none_2b24536c71ed437a\\gdiplus.dll"},
          {0x000007fefa750000, 0x7000, 0x1, "C:\\Windows\\system32\\MSIMG32.dll"},
          {0x000007fefd8e0000, 0x4d000, 0x5, "C:\\Windows\\system32\\WS2_32.dll"},
          {0x000007fefda80000, 0x8000, 0xb, ""},
@@ -452,8 +452,8 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
          {0x000007feec740000, 0x184000, 0x1, ""},
          {0x000007feec6b0000, 0x85000, 0x1, ""},
          {0x00000000747c0000, 0x27000, 0x1,
-          "C:\\Windows\\assembly\\GAC_64\\mcstoredb\\6.1.0.0__"
-          "31bf3856ad364e35\\mcstoredb.dll"},
+          "C:\\Windows\\assembly\\GAC_64\\mcstoredb\\6."
+          "1.0.0__31bf3856ad364e35\\mcstoredb.dll"},
          {0x000007fef6030000, 0x62000, 0x1, ""},
          {0x000007fefa030000, 0x1c000, 0x1, ""},
          {0x000007feec580000, 0x12a000, 0x1, ""},
@@ -491,7 +491,8 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
          {0x000007fefda90000, 0xd88000, 0xffff, "C:\\Windows\\system32\\SHELL32.dll"},
          {0x000007feff850000, 0x71000, 0xffff, "C:\\Windows\\system32\\SHLWAPI.dll"},
          {0x000000006e630000, 0x9d000, 0xffff,
-          "C:\\Windows\\WinSxS\\amd64_microsoft.vc90.crt_1fc8b3b9a1e18e3b_9.0.30729.4940_"
+          "C:\\Windows\\WinSxS\\amd64_microsoft."
+          "vc90.crt_1fc8b3b9a1e18e3b_9.0.30729.4940_"
           "none_08e4299fa83d7e3c\\MSVCR90.dll"},
          {0x000007feff7b0000, 0x2e000, 0x2, "C:\\Windows\\system32\\IMM32.DLL"},
          {0x000007fefeda0000, 0x109000, 0x1, "C:\\Windows\\system32\\MSCTF.dll"},
@@ -552,7 +553,7 @@ void handle_proces_modlist(struct WindowsKernelOSI* wintro, struct WindowsProces
     auto& entry = candidate->second;
 
     uint32_t module_count = 0;
-    auto modlist = get_module_list(wintro, p, MODULELIST_LOAD_ORDER);
+    auto modlist = get_module_list(wintro, process_get_eprocess(p), process_is_wow64(p));
     if (modlist) {
         auto me = module_list_next(modlist);
         while (me) {
@@ -589,12 +590,12 @@ TEST(TestAmd64Plist, Win7SP1Amd64)
     kosi.kernel_tlib = load_type_library("windows-64-7sp1");
     ASSERT_TRUE(kosi.pmem != nullptr) << "failed to load physical memory snapshot";
     ASSERT_TRUE(kosi.kernel_tlib != nullptr) << "failed to load type library";
-    ASSERT_TRUE(initialize_windows_kernel_osi(&kosi, &kdetails, asid, false, "windows-64-7sp1"))
+    ASSERT_TRUE(
+        initialize_windows_kernel_osi(&kosi, &kdetails, asid, false, "windows-64-7sp1"))
         << "Failed to initialize kernel osi";
 
     auto plist = get_process_list(&kosi);
     ASSERT_TRUE(plist != nullptr) << "Failed to get process list";
-    ;
 
     for (unsigned int ix = 0; ix < EXPECTED_RESULTS.size(); ++ix) {
         auto process = process_list_next(plist);
