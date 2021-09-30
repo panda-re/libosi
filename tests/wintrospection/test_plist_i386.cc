@@ -8,9 +8,6 @@
 #include <iostream>
 #include <map>
 
-// Include an internal header
-#include "wintrospection/utils.h"
-
 char* testfile = nullptr;
 
 struct ProcessInfo {
@@ -72,7 +69,8 @@ TEST(TestI386Plist, Win7SP1I386)
     ASSERT_TRUE(kosi.pmem != nullptr) << "failed to load physical memory snapshot";
     ASSERT_TRUE(kosi.kernel_tlib != nullptr) << "failed to load type library";
 
-    ASSERT_TRUE(initialize_windows_kernel_osi(&kosi, &kdetails, asid, false, "windows-32-7sp1"))
+    ASSERT_TRUE(
+        initialize_windows_kernel_osi(&kosi, &kdetails, asid, false, "windows-32-7sp1"))
         << "Failed to initialize kernel osi";
 
     auto plist = get_process_list(&kosi);

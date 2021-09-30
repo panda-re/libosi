@@ -12,10 +12,6 @@
 
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
-#include "wintrospection/utils.h"
-
-// Include an internal header
-#include "wintrospection/utils.h"
 
 char* testfile = nullptr;
 char* dlllistfile = nullptr;

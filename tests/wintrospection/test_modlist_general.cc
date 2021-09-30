@@ -10,12 +10,8 @@
 #include <map>
 #include <vector>
 
-// Include an internal header
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
-#include "wintrospection/utils.h"
-
-#include "config.h"
 
 struct ModuleInfo {
     uint64_t base;

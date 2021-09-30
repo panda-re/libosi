@@ -11980,7 +11980,8 @@ static std::map<std::string, std::map<long, std::string>> ENUM = {
     {
         "IdleType",
         {
-            {0, "DeviceIdleNormal"}, {1, "DeviceIdleDisk"},
+            {0, "DeviceIdleNormal"},
+            {1, "DeviceIdleDisk"},
         },
     },
     {
@@ -12209,7 +12210,8 @@ static std::map<std::string, std::map<long, std::string>> ENUM = {
     {
         "Mode",
         {
-            {0, "LevelSensitive"}, {1, "Latched"},
+            {0, "LevelSensitive"},
+            {1, "Latched"},
         },
     },
     {
@@ -12358,7 +12360,8 @@ static std::map<std::string, std::map<long, std::string>> ENUM = {
     {
         "TokenType",
         {
-            {1, "TokenPrimary"}, {2, "TokenImpersonation"},
+            {1, "TokenPrimary"},
+            {2, "TokenImpersonation"},
         },
     },
     {
@@ -12538,25 +12541,31 @@ static std::map<std::string, std::map<long, std::string>> ENUM = {
     {
         "SyncType",
         {
-            {0, "SyncTypeOther"}, {1, "SyncTypeCreateSection"},
+            {0, "SyncTypeOther"},
+            {1, "SyncTypeCreateSection"},
         },
     },
     {
         "NotificationType",
         {
-            {0, "NotifyTypeCreate"}, {1, "NotifyTypeRetired"},
+            {0, "NotifyTypeCreate"},
+            {1, "NotifyTypeRetired"},
         },
     },
     {
         "AlternativeArchitecture",
         {
-            {0, "StandardDesign"}, {1, "NEC98x86"}, {2, "EndAlternatives"},
+            {0, "StandardDesign"},
+            {1, "NEC98x86"},
+            {2, "EndAlternatives"},
         },
     },
     {
         "NtProductType",
         {
-            {1, "NtProductWinNt"}, {2, "NtProductLanManNt"}, {3, "NtProductServer"},
+            {1, "NtProductWinNt"},
+            {2, "NtProductLanManNt"},
+            {3, "NtProductServer"},
         },
     },
     {
@@ -12906,7 +12915,9 @@ static std::map<std::string, std::map<long, std::string>> ENUM = {
     {
         "StorageType",
         {
-            {0, "Stable"}, {1, "Volatile"}, {2, "InvalidStorage"},
+            {0, "Stable"},
+            {1, "Volatile"},
+            {2, "InvalidStorage"},
         },
     },
     {
@@ -12952,7 +12963,8 @@ static std::map<std::string, std::map<long, std::string>> ENUM = {
     {
         "DeviceTextType",
         {
-            {0, "DeviceTextDescription"}, {1, "DeviceTextLocationInformation"},
+            {0, "DeviceTextDescription"},
+            {1, "DeviceTextLocationInformation"},
         },
     },
     {
@@ -13007,4 +13019,4 @@ uint64_t type_of_member(uint64_t tid, const char* mname)
     }
     return INVALID_OFFSET;
 }
-}
+} // namespace windows_7sp1_x64

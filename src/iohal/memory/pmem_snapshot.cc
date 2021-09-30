@@ -28,9 +28,7 @@ public:
     int close_file_snapshot();
 };
 
-int FileSnapshotPhysicalMemory::close_file_snapshot() {
-    return fclose(m_fp);
-}
+int FileSnapshotPhysicalMemory::close_file_snapshot() { return fclose(m_fp); }
 
 pm_addr_t FileSnapshotPhysicalMemory::get_max_address() { return m_max_address; }
 

@@ -5,9 +5,6 @@
 #include <set>
 #include <unistd.h>
 
-// Include an internal header
-#include "wintrospection/utils.h"
-
 char* testfile = nullptr;
 
 TEST(WintroKernelbaseTest, Win7SP1Amd64)
@@ -27,7 +24,8 @@ TEST(WintroKernelbaseTest, Win7SP1Amd64)
     ASSERT_TRUE(kosi.pmem != nullptr) << "failed to load physical memory snapshot";
     ASSERT_TRUE(kosi.kernel_tlib != nullptr) << "failed to load type library";
 
-    ASSERT_TRUE(initialize_windows_kernel_osi(&kosi, &kdetails, asid, false, "windows-64-7sp1"))
+    ASSERT_TRUE(
+        initialize_windows_kernel_osi(&kosi, &kdetails, asid, false, "windows-64-7sp1"))
         << "Failed to initialize kernel osi";
 
     ASSERT_EQ(kdetails.kernelbase, 0xfffff8000265a000) << "Found the wrong kernel base";

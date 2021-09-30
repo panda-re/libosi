@@ -5,8 +5,8 @@
 #include "iohal/memory/physical_memory.h"
 #include "iohal/memory/virtual_memory.h"
 #include "offset/offset.h"
-#include "wintrospection/i_t.h"
 #include "gtest/gtest.h"
+#include <offset/i_t.h>
 
 char* testfile = nullptr;
 

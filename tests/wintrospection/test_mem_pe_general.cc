@@ -13,9 +13,6 @@
 
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
-#include "wintrospection/utils.h"
-
-#include "config.h"
 
 int MAX_BUFFER_SIZE = 65536;
 
@@ -246,7 +243,8 @@ TEST_P(TestMemPElist, snapshot)
         int numPEFound = 0;
 
         for (auto const& x : EXPECTED_RESULTS) {
-            WindowsProcessOSI* posi = (WindowsProcessOSI*)std::malloc(sizeof(WindowsProcessOSI));
+            WindowsProcessOSI* posi =
+                (WindowsProcessOSI*)std::malloc(sizeof(WindowsProcessOSI));
             std::memset(posi, 0, sizeof(WindowsProcessOSI));
             ASSERT_TRUE(init_process_osi_from_pid(&kosi, posi, x.first))
                 << "Failed to initialize process OSI object";

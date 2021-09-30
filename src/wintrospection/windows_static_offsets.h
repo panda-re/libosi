@@ -17,7 +17,7 @@ typedef union EXHANDLE_PARTIAL {
         uint32_t LowIndex : 9;
         uint32_t MidIndex : 10;
         uint32_t HighIndex : 10;
-        uint32_t KernelFlag : 1; 
+        uint32_t KernelFlag : 1;
     };
     uint32_t handle;
 } EXHANDLE_PARTIAL;
@@ -37,7 +37,7 @@ typedef union EXHANDLE_PARTIAL {
         uint64_t LowIndex : 8;
         uint64_t MidIndex : 9;
         uint64_t HighIndex : 9;
-        uint64_t KernelFlag : 36; 
+        uint64_t KernelFlag : 36;
     };
     uint64_t handle;
 } EXHANDLE_PARTIAL;

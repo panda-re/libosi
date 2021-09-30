@@ -1,5 +1,5 @@
-#ifndef __OSI_I_T
-#define __OSI_I_T
+#ifndef __OFFSET_I_T
+#define __OFFSET_I_T
 
 #include <codecvt>
 #include <cuchar>
@@ -10,9 +10,9 @@
 #include <stdexcept>
 #include <string>
 
+#include "offset.h"
 #include <iohal/memory/physical_memory.h>
 #include <iohal/memory/virtual_memory.h>
-#include <offset/offset.h>
 
 #define POINTER 0x80000000
 
