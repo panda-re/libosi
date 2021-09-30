@@ -5,9 +5,6 @@
 #include <set>
 #include <unistd.h>
 
-// Include an internal header
-#include "wintrospection/utils.h"
-
 char* testfile = nullptr;
 
 TEST(WintroKernelbaseTest, Win7SP1Amd64)
