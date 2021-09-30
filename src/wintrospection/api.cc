@@ -11,7 +11,9 @@
 #include <vector>
 
 #include "iohal/memory/virtual_memory.h"
-#include "offset/offset.h"
+#include <offset/i_t.h>
+#include <offset/offset.h>
+
 #include "windows_handles.h"
 #include "windows_introspection.h"
 #include "windows_static_offsets.h"

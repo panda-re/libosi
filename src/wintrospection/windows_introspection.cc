@@ -8,7 +8,7 @@
 
 #include "windows_introspection.h"
 #include "windows_static_offsets.h"
-#include "wintrospection/i_t.h"
+#include <offset/i_t.h>
 #include <iohal/memory/virtual_memory.h>
 #include <offset/offset.h>
 

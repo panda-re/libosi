@@ -1,6 +1,7 @@
+#include <offset/i_t.h>
+
 #include "windows_handles.h"
 #include "windows_static_offsets.h"
-#include "wintrospection/i_t.h"
 #include "wintrospection/wintrospection.h"
 
 #define TABLE_MASK ~0x7
