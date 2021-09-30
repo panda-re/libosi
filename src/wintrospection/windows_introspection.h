@@ -2,9 +2,9 @@
 #define __LIBINTRO_WINDOWS_INTROSPECTION_H
 
 #include "offset/offset.h"
-#include <offset/i_t.h>
 #include "wintrospection/utils.h"
 #include <iohal/memory/virtual_memory.h>
+#include <offset/i_t.h>
 #include <set>
 
 class WindowsIntrospectionImpl

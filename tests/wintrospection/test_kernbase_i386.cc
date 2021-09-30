@@ -27,7 +27,8 @@ TEST(WintroKernelbaseTest, Win7SP1i386)
     ASSERT_TRUE(kosi.pmem != nullptr) << "failed to load physical memory snapshot";
     ASSERT_TRUE(kosi.kernel_tlib != nullptr) << "failed to load type library";
 
-    ASSERT_TRUE(initialize_windows_kernel_osi(&kosi, &kdetails, asid, pae, "windows-32-7sp1"))
+    ASSERT_TRUE(
+        initialize_windows_kernel_osi(&kosi, &kdetails, asid, pae, "windows-32-7sp1"))
         << "Failed to initialize kernel osi";
 
     ASSERT_EQ(kdetails.kernelbase, 0x82811000) << "Found the wrong kernel base";

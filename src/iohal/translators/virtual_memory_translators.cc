@@ -63,8 +63,8 @@ void VirtualMemoryTranslator::invalidate() { m_impl->invalidate(); }
 VirtualMemoryTranslator::~VirtualMemoryTranslator() = default;
 VirtualMemoryTranslator::VirtualMemoryTranslator(VirtualMemoryTranslator&&) noexcept =
     default;
-VirtualMemoryTranslator& VirtualMemoryTranslator::
-operator=(VirtualMemoryTranslator&&) noexcept = default;
+VirtualMemoryTranslator&
+VirtualMemoryTranslator::operator=(VirtualMemoryTranslator&&) noexcept = default;
 
 VirtualMemoryTranslator::VirtualMemoryTranslator(const VirtualMemoryTranslator& rhs)
     : m_impl(nullptr)
@@ -74,8 +74,8 @@ VirtualMemoryTranslator::VirtualMemoryTranslator(const VirtualMemoryTranslator& 
     }
 }
 
-VirtualMemoryTranslator& VirtualMemoryTranslator::
-operator=(const VirtualMemoryTranslator& rhs)
+VirtualMemoryTranslator&
+VirtualMemoryTranslator::operator=(const VirtualMemoryTranslator& rhs)
 {
     if (!rhs.m_impl) {
         m_impl.reset();

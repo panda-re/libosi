@@ -154,8 +154,8 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
          {0x000007fefb850000, 0xb000, 0x1, ""},
          //{0x000007fefb850000,             0xb000,                0x1,
          //"C:\\Windows\\ehome\\ehSSO.d"}, <--this unicode address was paged out when
-         //looking using volatility TODO: determine why volatility can still find this
-         //path even though buffer address is unreadable (Mod address at 0x04060A00)
+         // looking using volatility TODO: determine why volatility can still find this
+         // path even though buffer address is unreadable (Mod address at 0x04060A00)
          {0x000007fef9570000, 0x28b000, 0x3, "C:\\Windows\\System32\\netshell.dll"},
          {0x000007fefafd0000, 0x27000, 0x8, "C:\\Windows\\System32\\IPHLPAPI.DLL"},
          {0x000007fefda80000, 0x8000, 0x1a, "C:\\Windows\\system32\\NSI.dll"},
@@ -589,7 +589,8 @@ TEST(TestAmd64Plist, Win7SP1Amd64)
     kosi.kernel_tlib = load_type_library("windows-64-7sp1");
     ASSERT_TRUE(kosi.pmem != nullptr) << "failed to load physical memory snapshot";
     ASSERT_TRUE(kosi.kernel_tlib != nullptr) << "failed to load type library";
-    ASSERT_TRUE(initialize_windows_kernel_osi(&kosi, &kdetails, asid, false, "windows-64-7sp1"))
+    ASSERT_TRUE(
+        initialize_windows_kernel_osi(&kosi, &kdetails, asid, false, "windows-64-7sp1"))
         << "Failed to initialize kernel osi";
 
     auto plist = get_process_list(&kosi);

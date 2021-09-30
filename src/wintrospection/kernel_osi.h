@@ -9,12 +9,12 @@
 #include <map>
 #include <stdint.h>
 
-#include <offset/i_t.h>
-#include <offset/offset.h>
 #include "windows_introspection.h"
 #include "windows_static_offsets.h"
 #include "wintrospection/iterator.h"
 #include <iohal/memory/virtual_memory.h>
+#include <offset/i_t.h>
+#include <offset/offset.h>
 
 namespace osi
 {

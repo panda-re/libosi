@@ -9,7 +9,7 @@
 #define HANDLE_ENTRY_SIZE_32 0x08
 
 // the resolve functions in this file are based off of ReactOS
-// https://doxygen.reactos.org/d0/d72/ex_8h.html#a1fa10d89ce5eb73bd55ed2cd2001d38a  
+// https://doxygen.reactos.org/d0/d72/ex_8h.html#a1fa10d89ce5eb73bd55ed2cd2001d38a
 
 uint64_t resolve_base_x64(uint64_t value, uint32_t level, uint64_t base)
 {
@@ -55,7 +55,8 @@ uint32_t resolve_base_x86(uint32_t value, uint32_t level, uint32_t base)
     return base;
 }
 
-osi::i_t resolve_handle_table_entry(struct WindowsProcessOSI* posi, uint64_t handle, bool x64)
+osi::i_t resolve_handle_table_entry(struct WindowsProcessOSI* posi, uint64_t handle,
+                                    bool x64)
 {
     osi::i_t obj(posi->vmem, posi->tlib, posi->eprocess_address, "_EPROCESS");
 

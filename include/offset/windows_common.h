@@ -2,8 +2,8 @@
 #define _OFFSET_WINDOWS_COMMON_H
 
 #include <cassert>
-#include <cstdint>
 #include <cstddef>
+#include <cstdint>
 #define _Static_assert static_assert
 
 /*

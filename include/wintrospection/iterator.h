@@ -8,8 +8,8 @@
 
 #include <iohal/memory/physical_memory.h>
 #include <iohal/memory/virtual_memory.h>
-#include <offset/offset.h>
 #include <offset/i_t.h>
+#include <offset/offset.h>
 
 namespace osi
 {

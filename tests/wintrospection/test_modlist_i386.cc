@@ -1533,7 +1533,8 @@ TEST(Testi386Plist, Win7SP1i386)
     kosi.kernel_tlib = load_type_library("windows-32-7sp1");
     ASSERT_TRUE(kosi.pmem != nullptr) << "failed to load physical memory snapshot";
     ASSERT_TRUE(kosi.kernel_tlib != nullptr) << "failed to load type library";
-    ASSERT_TRUE(initialize_windows_kernel_osi(&kosi, &kdetails, asid, pae, "windows-32-7sp1"))
+    ASSERT_TRUE(
+        initialize_windows_kernel_osi(&kosi, &kdetails, asid, pae, "windows-32-7sp1"))
         << "Failed to initialize kernel osi";
 
     auto plist = get_process_list(&kosi);

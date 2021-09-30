@@ -126,4 +126,4 @@ TranslateStatus translate_address(struct PhysicalMemory* pm, vm_addr_t vm_addr,
     *pm_addr = (pte & HW_ENTRY_MASK) + get_byte_offset(vm_addr);
     return TSTAT_SUCCESS;
 }
-}
+} // namespace amd64_translator

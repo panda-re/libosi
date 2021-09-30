@@ -10,9 +10,9 @@
 #include <stdexcept>
 #include <string>
 
+#include "offset.h"
 #include <iohal/memory/physical_memory.h>
 #include <iohal/memory/virtual_memory.h>
-#include "offset.h"
 
 #define POINTER 0x80000000
 

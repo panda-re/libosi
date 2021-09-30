@@ -1,5 +1,5 @@
-#include <offset/offset.h>
 #include <offset/i_t.h>
+#include <offset/offset.h>
 
 #include "wintrospection/wintrospection.h"
 #include "gtest/gtest.h"

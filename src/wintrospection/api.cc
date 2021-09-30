@@ -188,7 +188,7 @@ struct WindowsProcess* create_process(struct WindowsKernelOSI* kosi,
         } else {
             peb = eproc("Peb");
         }
-    } catch (std::runtime_error) { 
+    } catch (std::runtime_error) {
         // bail if the PEB isn't readable. user can still see other attrs
         p->cmdline = nullptr;
         p->base_vba = 0;
@@ -355,7 +355,8 @@ struct WindowsModuleList* get_module_list(struct WindowsKernelOSI* kosi,
     mlist->modules = new std::map<uint64_t, bool>();
 
     // Deep copy, we are going to change the asid
-    mlist->posi = (struct WindowsProcessOSI*)std::calloc(1, sizeof(struct WindowsProcessOSI));
+    mlist->posi =
+        (struct WindowsProcessOSI*)std::calloc(1, sizeof(struct WindowsProcessOSI));
     init_process_osi(kosi, mlist->posi, process_address);
 
     mlist->idx = 0;
@@ -636,8 +637,8 @@ bool init_process_osi_from_pid(struct WindowsKernelOSI* kosi,
     return false;
 }
 
-bool init_process_osi(struct WindowsKernelOSI* kosi, struct WindowsProcessOSI* process_osi,
-                      uint64_t eprocess_address)
+bool init_process_osi(struct WindowsKernelOSI* kosi,
+                      struct WindowsProcessOSI* process_osi, uint64_t eprocess_address)
 {
     process_osi->tlib = kosi->kernel_tlib; // TODO change if wow64
     process_osi->vmem = std::make_shared<VirtualMemory>(*kosi->system_vmem);

@@ -11,8 +11,8 @@
 #include <string>
 #include <uchar.h>
 
-#include <offset/i_t.h>
 #include <iohal/memory/virtual_memory.h>
+#include <offset/i_t.h>
 #include <offset/offset.h>
 
 #define MAX_STRING_LEN 4096

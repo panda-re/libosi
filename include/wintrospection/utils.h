@@ -1,9 +1,9 @@
 #ifndef __LIBINTRO_WINDOWS_INTROSPECTION_UTILS_H
 #define __LIBINTRO_WINDOWS_INTROSPECTION_UTILS_H
 
-#include <offset/offset.h>
-#include <offset/i_t.h>
 #include <iohal/memory/virtual_memory.h>
+#include <offset/i_t.h>
+#include <offset/offset.h>
 #include <set>
 
 bool find_kernel_base(VirtualMemory* vmem, vm_addr_t kpcr, vm_addr_t* base);

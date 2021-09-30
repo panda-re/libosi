@@ -37,7 +37,8 @@ int main(int argc, char* argv[])
         fprintf(stderr, "Failed to load type library\n");
         return 2;
     }
-    if (!initialize_windows_kernel_osi(&kosi, &kdetails, asid, false, "windows-64-7sp1")) {
+    if (!initialize_windows_kernel_osi(&kosi, &kdetails, asid, false,
+                                       "windows-64-7sp1")) {
         fprintf(stderr, "Failed to initialize windows\n");
         return 3;
     }
