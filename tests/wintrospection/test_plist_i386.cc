@@ -8,9 +8,6 @@
 #include <iostream>
 #include <map>
 
-// Include an internal header
-#include "wintrospection/utils.h"
-
 char* testfile = nullptr;
 
 struct ProcessInfo {

@@ -9,8 +9,6 @@
 #include <iostream>
 #include <map>
 
-#include "wintrospection/utils.h"
-
 char* testfile = nullptr;
 
 TEST(TestAmd64MemPE, Win7SP1Amd64)

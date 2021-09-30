@@ -1,8 +1,8 @@
 #ifndef __LIBINTRO_WINDOWS_INTROSPECTION_H
 #define __LIBINTRO_WINDOWS_INTROSPECTION_H
 
+#include "kernel_osi.h"
 #include "offset/offset.h"
-#include "wintrospection/utils.h"
 #include <iohal/memory/virtual_memory.h>
 #include <offset/i_t.h>
 #include <set>

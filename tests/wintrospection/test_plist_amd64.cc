@@ -8,8 +8,6 @@
 #include <iostream>
 #include <map>
 
-#include "wintrospection/utils.h"
-
 char* testfile = nullptr;
 struct ProcessInfo {
     uint64_t offset;

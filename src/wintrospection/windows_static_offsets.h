@@ -1,6 +1,8 @@
 #ifndef __LIBINTRO_WINDOWS_STATIC_OFFSETS_H
 #define __LIBINTRO_WINDOWS_STATIC_OFFSETS_H
 
+#include <iohal/memory/virtual_memory.h>
+
 namespace static_offsets
 {
 namespace i386

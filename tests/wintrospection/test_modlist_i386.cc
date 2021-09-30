@@ -9,9 +9,6 @@
 #include <map>
 #include <vector>
 
-// Include an internal header
-#include "wintrospection/utils.h"
-
 char* testfile = nullptr;
 
 struct ModuleInfo {

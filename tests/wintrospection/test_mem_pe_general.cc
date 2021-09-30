@@ -13,9 +13,6 @@
 
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
-#include "wintrospection/utils.h"
-
-#include "config.h"
 
 int MAX_BUFFER_SIZE = 65536;
 

@@ -12,11 +12,6 @@
 
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
-#include "wintrospection/utils.h"
-
-// Include an internal header
-#include "config.h"
-#include "wintrospection/utils.h"
 
 char* testfile =
     "../tests/wintrospection-tests/wow64/snapshots/wow64_notepadwin7sp1.tar.gz";
