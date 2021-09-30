@@ -33,7 +33,6 @@ struct WindowsProcessOSI {
     uint64_t pid;
 };
 
-struct WindowsInstrospection;
 struct WindowsProcess;
 struct WindowsModuleEntry;
 struct WindowsProcessList;

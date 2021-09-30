@@ -71,8 +71,7 @@ target_include_directories(offset-static PUBLIC
     $<INSTALL_INTERFACE:include>)
 
 
-set(WINTRO_SRCS src/wintrospection/windows_introspection.cc
-                src/wintrospection/kernel_osi.cc
+set(WINTRO_SRCS src/wintrospection/kernel_osi.cc
                 src/wintrospection/api.cc
                 src/wintrospection/windows_handles.cc
                 src/wintrospection/mem_pe/mem_pe.cc)

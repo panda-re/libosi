@@ -15,7 +15,6 @@
 #include <offset/offset.h>
 
 #include "windows_handles.h"
-#include "windows_introspection.h"
 #include "windows_static_offsets.h"
 #include "wintrospection/iterator.h"
 #include "wintrospection/ustring.h"
