@@ -1,4 +1,4 @@
-project(systrospection)
+project(system-introspection)
 cmake_minimum_required(VERSION 3.0.2)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -129,3 +129,5 @@ if (ENABLE_TESTING)
     enable_testing()
     add_subdirectory(tests)
 endif()
+
+include(CPackConfig.txt)
