@@ -88,7 +88,7 @@ bool init_physical_memory_amd64(void* opaque)
 TEST(VmTranlatorAmd64Test, VTTranslateNormal)
 {
     struct PhysicalMemory* pmem = createSparsePhysicalMemory(TWO_GB);
-    VirtualMemoryTranslator amd64_trans(pmem, 64, 0x1c55a000, false);
+    VirtualMemoryTranslator amd64_trans(pmem, 64, 0x1c55a000, false, "unknown");
 
     ASSERT_TRUE(init_physical_memory_amd64(pmem->opaque));
     pm_addr_t pm_addr = 0;
@@ -138,7 +138,7 @@ TEST(VmTranlatorAmd64Test, VTTranslateNormal)
 TEST(VmTranlatorAmd64Test, VTTranslateLarge)
 {
     struct PhysicalMemory* pmem = createSparsePhysicalMemory(TWO_GB);
-    VirtualMemoryTranslator amd64_trans(pmem, 64, 0x1c55a000, false);
+    VirtualMemoryTranslator amd64_trans(pmem, 64, 0x1c55a000, false, "unknown");
 
     ASSERT_TRUE(init_physical_memory_amd64(pmem->opaque));
     pm_addr_t pm_addr = 0;

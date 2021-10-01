@@ -34,8 +34,8 @@ Pull Requests are welcome.
 ### To-Do
 
 :pushpin: Is there a more catchy name for this?  
-:pushpin: Is there a better way to reduce the duplication of translate functions in offset?  
 :pushpin: Support structs that aren't kernel types, such as \_FILE\_RENAME\_INFORMATION  
 :pushpin: Support pointers to pointers in offset  
 :pushpin: Offset should have something like a sizeof() function to better support arrays  
-:pushpin: Include tools for generating new profiles.
+:pushpin: Include tools for generating new profiles.  
+:pushpin: Find a place to host memory snapshots for wintrospection tests  

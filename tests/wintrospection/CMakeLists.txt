@@ -4,8 +4,8 @@ add_test(Wintrospection test-basic)
 
 include(ExternalData)
 
-# replace external:8000 with place tests are hosted
-set(ExternalData_URL_TEMPLATES "http://external:8000/testdata/%(algo)/%(hash)")
+# replace external with a place where tests will be hosted
+set(ExternalData_URL_TEMPLATES "http://external/testdata/%(algo)/%(hash)")
 set(ExternalData_TIMEOUT_ABSOLUTE 0)
 
 macro(add_file_test testname testpath testdata)
