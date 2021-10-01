@@ -422,8 +422,9 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
       {0x75b10000, 0x1b000, 0x5, "C:\\Windows\\System32\\SspiCli.dll"},
       {0x73fa0000, 0x35000, 0x1, "C:\\Windows\\System32\\mstask.dll"},
       {0x74cd0000, 0x19e000, 0x1,
-       "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0."
-       "7601.17514_none_41e6975e2bd6f2b2\\COMCTL32.dll"},
+       "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-"
+       "controls_6595b64144ccf1df_6.0.7601.17514_none_"
+       "41e6975e2bd6f2b2\\COMCTL32.dll"},
       {0x772f0000, 0x57000, 0x9, "C:\\Windows\\system32\\SHLWAPI.dll"},
       {0x75720000, 0x16000, 0x1, "C:\\Windows\\System32\\CRYPTSP.dll"},
       {0x75470000, 0x3b000, 0x1, "C:\\Windows\\system32\\rsaenh.dll"},
@@ -551,8 +552,9 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
       {0x75800000, 0x2b000, 0x1, "C:\\Windows\\system32\\netjoin.dll"},
       {0x746d0000, 0xd000, 0x5, "C:\\Windows\\system32\\WTSAPI32.dll"},
       {0x74cd0000, 0x19e000, 0x2,
-       "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0."
-       "7601.17514_none_41e6975e2bd6f2b2\\comctl32.dll"},
+       "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-"
+       "controls_6595b64144ccf1df_6.0.7601.17514_none_"
+       "41e6975e2bd6f2b2\\comctl32.dll"},
       {0x74b90000, 0xf5000, 0x4, "C:\\Windows\\system32\\PROPSYS.dll"},
       {0x73f50000, 0x47000, 0x2, "C:\\Windows\\system32\\ES.DLL"},
       {0x75b90000, 0x5f000, 0x1, "C:\\Windows\\system32\\SXS.DLL"},
@@ -1044,16 +1046,18 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
       {0x74820000, 0x13000, 0xffff, "C:\\Windows\\system32\\dwmapi.dll"},
       {0x73f40000, 0xa000, 0xffff, "C:\\Windows\\system32\\slc.dll"},
       {0x749c0000, 0x190000, 0xffff,
-       "C:\\Windows\\WinSxS\\x86_microsoft.windows.gdiplus_6595b64144ccf1df_1.1.7601."
-       "17514_none_72d18a4386696c80\\gdiplus.dll"},
+       "C:\\Windows\\WinSxS\\x86_microsoft.windows.gdiplus_"
+       "6595b64144ccf1df_1.1.7601.17514_none_"
+       "72d18a4386696c80\\gdiplus.dll"},
       {0x757d0000, 0x8000, 0xffff, "C:\\Windows\\system32\\Secur32.dll"},
       {0x75b10000, 0x1b000, 0xffff, "C:\\Windows\\system32\\SSPICLI.DLL"},
       {0x74b90000, 0xf5000, 0xffff, "C:\\Windows\\system32\\PROPSYS.dll"},
       {0x75c00000, 0x29000, 0x4, "C:\\Windows\\system32\\WINSTA.dll"},
       {0x75b80000, 0xc000, 0x2, "C:\\Windows\\system32\\CRYPTBASE.dll"},
       {0x74cd0000, 0x19e000, 0x35,
-       "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0."
-       "7601.17514_none_41e6975e2bd6f2b2\\comctl32.dll"},
+       "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-"
+       "controls_6595b64144ccf1df_6.0.7601.17514_none_"
+       "41e6975e2bd6f2b2\\comctl32.dll"},
       {0x746f0000, 0xfb000, 0x2, "C:\\Windows\\system32\\WindowsCodecs.dll"},
       {0x75c30000, 0xb000, 0x5, "C:\\Windows\\system32\\profapi.dll"},
       {0x75b30000, 0x4c000, 0x1, "C:\\Windows\\system32\\apphelp.dll"},
@@ -1182,8 +1186,9 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
       {0x75b80000, 0xc000, 0x1, "C:\\Windows\\System32\\CRYPTBASE.dll"},
       {0x74b50000, 0x40000, 0x2, "C:\\Windows\\system32\\uxtheme.dll"},
       {0x74cd0000, 0x19e000, 0x4,
-       "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0."
-       "7601.17514_none_41e6975e2bd6f2b2\\Comctl32.dll"},
+       "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-"
+       "controls_6595b64144ccf1df_6.0.7601.17514_none_"
+       "41e6975e2bd6f2b2\\Comctl32.dll"},
       {0x74820000, 0x13000, 0x1, "C:\\Windows\\System32\\dwmapi.dll"}}},
     {288,
      {{0x008b0000, 0xe000, 0xffff, "C:\\Windows\\system32\\rundll32.exe"},
@@ -1337,8 +1342,9 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
       {0x76350000, 0x45000, 0x1, "C:\\Windows\\system32\\WLDAP32.dll"},
       {0x766a0000, 0xc4a000, 0x3, "C:\\Windows\\system32\\SHELL32.dll"},
       {0x74cd0000, 0x19e000, 0x2,
-       "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0."
-       "7601.17514_none_41e6975e2bd6f2b2\\comctl32.dll"},
+       "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-"
+       "controls_6595b64144ccf1df_6.0.7601.17514_none_"
+       "41e6975e2bd6f2b2\\comctl32.dll"},
       {0x74b90000, 0xf5000, 0x5, "C:\\Windows\\system32\\propsys.dll"},
       {0x75fc0000, 0x19d000, 0x1, "C:\\Windows\\system32\\SETUPAPI.dll"},
       {0x75e70000, 0x27000, 0x4, "C:\\Windows\\system32\\CFGMGR32.dll"},
@@ -1383,7 +1389,8 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> EXPECTED_RESULTS = {
       {0x75cb0000, 0x4a000, 0xffff, "C:\\Windows\\system32\\KERNELBASE.dll"},
       {0x6f2a0000, 0x4a000, 0xffff, "C:\\Windows\\system32\\mscoree.dll"},
       {0x6f8c0000, 0x9b000, 0xffff,
-       "C:\\Windows\\WinSxS\\x86_microsoft.vc80.crt_1fc8b3b9a1e18e3b_8.0.50727.4940_none_"
+       "C:\\Windows\\WinSxS\\x86_microsoft.vc80.crt_"
+       "1fc8b3b9a1e18e3b_8.0.50727.4940_none_"
        "d08cc06a442b34fc\\MSVCR80.dll"},
       {0x779d0000, 0xac000, 0xffff, "C:\\Windows\\system32\\msvcrt.dll"},
       {0x77350000, 0xa0000, 0xffff, "C:\\Windows\\system32\\ADVAPI32.dll"},
@@ -1492,7 +1499,7 @@ void handle_proces_modlist(struct WindowsKernelOSI* wintro, struct WindowsProces
     auto& entry = candidate->second;
 
     uint32_t module_count = 0;
-    auto modlist = get_module_list(wintro, p, MODULELIST_LOAD_ORDER);
+    auto modlist = get_module_list(wintro, process_get_eprocess(p), process_is_wow64(p));
 
     if (modlist) {
         auto me = module_list_next(modlist);
