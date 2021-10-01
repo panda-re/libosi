@@ -1,10 +1,4 @@
-<h1 align="center">System Introspection</h1>
-
-:pushpin: What's a more catchy name?
-
-Standalone System Introspection library.
-
-:warning: This repo is a work in progress!
+<h1 align="center">:construction: System Introspection :construction:</h1>
 
 ### Prerequisites
 
@@ -30,3 +24,11 @@ ninja
 
 This library currently supports Windows 7 and Debian 8.11 (linux kernel v3.16).
 Support for similar Windows and Linux kernels is as simple as adding a new profile to `offset`.
+
+### To-Do
+
+:pushpin: Is there a more catchy name for this?  
+:pushpin: Is there a better way to reduce the duplication of translate functions in offset?  
+:pushpin: Support structs that aren't kernel types, such as \_FILE\_RENAME\_INFORMATION  
+:pushpin: Support pointers to pointers in offset  
+:pushpin: Offset should have something like a sizeof() function to better support arrays  
