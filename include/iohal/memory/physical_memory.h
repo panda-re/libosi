@@ -28,7 +28,6 @@ typedef pm_addr_t (*UpperBoundFunc)(struct PhysicalMemory* this_pm);
  */
 typedef bool (*ReadPhysicalMemoryFunc)(struct PhysicalMemory* this_pm, pm_addr_t addr,
                                        uint8_t* buffer, uint64_t size);
-
 /**
  * \brief free the PhysicalMemory object
  *
@@ -58,8 +57,7 @@ struct PhysicalMemory {
      */
     void* opaque;
 
-    /** \brief \ref UpperBoundFunc implementation
-     */
+    /** \brief \ref UpperBoundFunc implementation */
     UpperBoundFunc upper_bound;
 
     /** \brief \ref ReadPhysicalMemoryFunc implementation */

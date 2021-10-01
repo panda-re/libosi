@@ -7,10 +7,15 @@
 #include <map>
 #include <stdint.h>
 
+// WINDOWS
 #include "profiles/win7_sp0_x64.h"
 #include "profiles/win7_sp0_x86.h"
 #include "profiles/win7_sp1_x64.h"
 #include "profiles/win7_sp1_x86.h"
+
+// LINUX
+#include "profiles/debian8_11_x64.h"
+#include "profiles/debian8_11_x86.h"
 
 #define POINTER 0x80000000
 
@@ -56,23 +61,47 @@ struct StructureTypeLibrary* load_type_library(const char* profile)
     }
 
     auto stm = new StructureTypeLibrary();
-    if (strcmp(profile, "windows-32-7sp0") == 0) {
-        stm->translate = windows_7sp0_x86::translate_type;
-        stm->offset_of = windows_7sp0_x86::offset_of_member;
-        stm->type_of = windows_7sp0_x86::type_of_member;
-    } else if (strcmp(profile, "windows-64-7sp0") == 0) {
-        stm->translate = windows_7sp0_x64::translate_type;
-        stm->offset_of = windows_7sp0_x64::offset_of_member;
-        stm->type_of = windows_7sp0_x64::type_of_member;
-    } else if (strcmp(profile, "windows-32-7sp1") == 0) {
-        stm->translate = windows_7sp1_x86::translate_type;
-        stm->offset_of = windows_7sp1_x86::offset_of_member;
-        stm->type_of = windows_7sp1_x86::type_of_member;
-    } else if (strcmp(profile, "windows-64-7sp1") == 0) {
-        stm->translate = windows_7sp1_x64::translate_type;
-        stm->offset_of = windows_7sp1_x64::offset_of_member;
-        stm->type_of = windows_7sp1_x64::type_of_member;
-    } else {
+
+    // WINDOWS
+    if (strncmp(profile, "win", (size_t)3) == 0) {
+        if (strcmp(profile, "windows-32-7sp0") == 0) {
+            stm->translate = windows_7sp0_x86::translate_type;
+            stm->offset_of = windows_7sp0_x86::offset_of_member;
+            stm->type_of = windows_7sp0_x86::type_of_member;
+        } else if (strcmp(profile, "windows-64-7sp0") == 0) {
+            stm->translate = windows_7sp0_x64::translate_type;
+            stm->offset_of = windows_7sp0_x64::offset_of_member;
+            stm->type_of = windows_7sp0_x64::type_of_member;
+        } else if (strcmp(profile, "windows-32-7sp1") == 0) {
+            stm->translate = windows_7sp1_x86::translate_type;
+            stm->offset_of = windows_7sp1_x86::offset_of_member;
+            stm->type_of = windows_7sp1_x86::type_of_member;
+        } else if (strcmp(profile, "windows-64-7sp1") == 0) {
+            stm->translate = windows_7sp1_x64::translate_type;
+            stm->offset_of = windows_7sp1_x64::offset_of_member;
+            stm->type_of = windows_7sp1_x64::type_of_member;
+        } else {
+            delete stm;
+            return nullptr;
+        }
+    }
+    // DEBIAN
+    else if (strncmp(profile, "deb", (size_t)3) == 0) {
+        if (strcmp(profile, "debian-32-8.11") == 0) {
+            stm->translate = debian8_11_x86::translate_type;
+            stm->offset_of = debian8_11_x86::offset_of_member;
+            stm->type_of = debian8_11_x86::type_of_member;
+        } else if (strcmp(profile, "debian-64-8.11") == 0) {
+            stm->translate = debian8_11_x64::translate_type;
+            stm->offset_of = debian8_11_x64::offset_of_member;
+            stm->type_of = debian8_11_x64::type_of_member;
+        } else {
+            delete stm;
+            return nullptr;
+        }
+    }
+    // NOT VALID
+    else {
         delete stm;
         return nullptr;
     }

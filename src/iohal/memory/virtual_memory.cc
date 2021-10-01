@@ -7,10 +7,11 @@
 #include "iohal/memory/virtual_memory.h"
 
 VirtualMemory::VirtualMemory(struct PhysicalMemory* pmem, uint8_t bits, pm_addr_t asid,
-                             bool pae)
+                             bool pae, const char* profile)
 {
     m_pmem = pmem;
-    m_vmtrans = std::make_unique<VirtualMemoryTranslator>(m_pmem, bits, asid, pae);
+    m_vmtrans =
+        std::make_unique<VirtualMemoryTranslator>(m_pmem, bits, asid, pae, profile);
     m_pointer_width = (bits == 32) ? 4 : 8;
     m_pae = pae;
 }

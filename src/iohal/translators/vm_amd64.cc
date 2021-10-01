@@ -3,7 +3,7 @@
 
 #include "iohal/memory/physical_memory.h"
 #include "iohal/memory/virtual_memory.h"
-#include "windows_amd64.h"
+#include "vm_amd64.h"
 
 #define HW_ENTRY_MASK 0xffffffffff000
 
@@ -64,12 +64,18 @@ static inline pm_addr_t get_1GB_byte_offset(vm_addr_t vaddr)
 
 static inline bool is_large_page(pm_addr_t entry) { return ((entry & (1 << 7)) > 0); }
 
-static inline bool page_table_entry_present(vm_addr_t entry)
+static inline bool page_table_entry_present(vm_addr_t entry, TranslateProfile profile)
 {
     bool present = ((entry & 1) == 1);
     bool in_transition = ((entry & (1 << 11)) && !(entry & (1 << 10)));
+    bool global = (entry & (1 << 8));
 
-    return present || in_transition;
+    if (profile == TPROF_GENERIC_LINUX) {
+        return present || global;
+    } else if (profile == TPROF_GENERIC_WINDOWS) {
+        return present || in_transition;
+    }
+    return present;
 }
 
 static inline pm_addr_t get_entry(struct PhysicalMemory* pmem, vm_addr_t addr,
@@ -84,7 +90,8 @@ static inline pm_addr_t get_entry(struct PhysicalMemory* pmem, vm_addr_t addr,
 }
 
 TranslateStatus translate_address(struct PhysicalMemory* pm, vm_addr_t vm_addr,
-                                  pm_addr_t* pm_addr, pm_addr_t asid)
+                                  pm_addr_t* pm_addr, pm_addr_t asid,
+                                  TranslateProfile profile)
 {
     // Read the base address of the page directory pointer table (pdpt) from cr4
     auto pml4e = get_entry(pm, vm_addr, pml4_index, asid);
@@ -106,7 +113,7 @@ TranslateStatus translate_address(struct PhysicalMemory* pm, vm_addr_t vm_addr,
 
     auto pd_base = pdpte & HW_ENTRY_MASK;
     auto pde = get_entry(pm, vm_addr, page_directory_index, pd_base);
-    if (!page_table_entry_present(pde)) {
+    if (!page_table_entry_present(pde, profile)) {
         return TSTAT_INVALID_ADDRESS; // TODO check if paged out
     }
 
@@ -118,7 +125,7 @@ TranslateStatus translate_address(struct PhysicalMemory* pm, vm_addr_t vm_addr,
     /// Read the base address of the page table (PT) from the PDT
     auto pt_base = pde & HW_ENTRY_MASK;
     auto pte = get_entry(pm, vm_addr, page_table_index, pt_base);
-    if (!page_table_entry_present(pte)) {
+    if (!page_table_entry_present(pte, profile)) {
         return TSTAT_PAGED_OUT; // TODO check if paged out
     }
 

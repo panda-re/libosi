@@ -27,10 +27,10 @@ bool initialize_windows_kernel_osi(struct WindowsKernelOSI* kosi,
     // Create a virtual memory interface using the specified asid
     if (kdetails->pointer_width == 8) {
         kosi->system_vmem =
-            std::make_shared<VirtualMemory>(kosi->pmem, 64, current_asid, pae);
+            std::make_shared<VirtualMemory>(kosi->pmem, 64, current_asid, pae, profile);
     } else if (kdetails->pointer_width == 4) {
         kosi->system_vmem =
-            std::make_shared<VirtualMemory>(kosi->pmem, 32, current_asid, pae);
+            std::make_shared<VirtualMemory>(kosi->pmem, 32, current_asid, pae, profile);
     } else {
         return false;
     }

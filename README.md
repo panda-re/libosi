@@ -1,6 +1,8 @@
-<h1 align="center">Wintrospection</h1>
+<h1 align="center">System Introspection</h1>
 
-Windows introspection library.
+:pushpin: What's a more catchy name?
+
+Standalone System Introspection library.
 
 :warning: This repo is a work in progress!
 
@@ -23,3 +25,8 @@ mkdir build && cd $_
 cmake -GNinja ..
 ninja
 ```
+
+### Development
+
+This library currently supports Windows 7 and Debian 8.11 (linux kernel v3.16).
+Support for similar Windows and Linux kernels is as simple as adding a new profile to `offset`.

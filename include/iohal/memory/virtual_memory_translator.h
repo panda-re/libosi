@@ -17,6 +17,12 @@ enum TranslateStatus {
     TSTAT_UNSUPPORTED_OPERATION = 4
 };
 
+enum TranslateProfile {
+    TPROF_UNKNOWN = 0,
+    TPROF_GENERIC_WINDOWS = 1,
+    TPROF_GENERIC_LINUX = 2
+};
+
 #define TRANSLATE_SUCCEEDED(status) ((status) == TSTAT_SUCCESS)
 
 class VirtualMemoryTranslator
@@ -27,7 +33,7 @@ private:
 
 public:
     VirtualMemoryTranslator(struct PhysicalMemory* pmem, uint8_t bits, pm_addr_t asid,
-                            bool pae);
+                            bool pae, const char* profile);
     ~VirtualMemoryTranslator();
 
     VirtualMemoryTranslator(const VirtualMemoryTranslator& rhs);

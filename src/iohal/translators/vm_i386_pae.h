@@ -9,7 +9,8 @@ namespace i386_pae_translator
 {
 
 TranslateStatus translate_address(struct PhysicalMemory* pm, vm_addr_t vm_addr,
-                                  pm_addr_t* pm_addr, pm_addr_t asid);
+                                  pm_addr_t* pm_addr, pm_addr_t asid,
+                                  TranslateProfile profile);
 };
 
 #endif
