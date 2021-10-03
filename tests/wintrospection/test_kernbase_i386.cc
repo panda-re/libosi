@@ -1,6 +1,6 @@
 #include "iohal/memory/virtual_memory.h"
 #include "offset/offset.h"
-#include "wintrospection/wintrospection.h"
+#include "osi/windows/wintrospection.h"
 #include "gtest/gtest.h"
 #include <set>
 #include <unistd.h>

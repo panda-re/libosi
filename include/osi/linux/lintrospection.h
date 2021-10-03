@@ -1,7 +1,7 @@
 #ifndef __LIBINTRO_LINTROSPECTION_H
 #define __LIBINTRO_LINTROSPECTION_H
 
-#include "offset/i_t.h"
+#include <offset/i_t.h>
 #include <iohal/memory/virtual_memory.h>
 #include <memory>
 #include <stdbool.h>

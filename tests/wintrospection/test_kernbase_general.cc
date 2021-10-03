@@ -1,6 +1,6 @@
 #include "iohal/memory/virtual_memory.h"
 #include "offset/offset.h"
-#include "wintrospection/wintrospection.h"
+#include "osi/windows/wintrospection.h"
 #include "gtest/gtest.h"
 #include <set>
 #include <unistd.h>
@@ -10,8 +10,6 @@
 // Include an internal header
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
-
-#include "config.h"
 
 int MAX_BUFFER_SIZE = 65536;
 

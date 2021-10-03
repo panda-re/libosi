@@ -1,5 +1,5 @@
 #include "kernel_osi.h"
-#include "wintrospection/wintrospection.h"
+#include "osi/windows/wintrospection.h"
 
 bool initialize_windows_kernel_osi(struct WindowsKernelOSI* kosi,
                                    struct WindowsKernelDetails* kdetails,

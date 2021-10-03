@@ -10,7 +10,7 @@ set(ExternalData_TIMEOUT_ABSOLUTE 0)
 
 macro(add_file_test testname testpath testdata)
     add_executable(${testname} ${testpath})
-    target_link_libraries(${testname} wintrospection
+    target_link_libraries(${testname} osi
     				      iohal offset gtest_main)
 	ExternalData_Add_Test(TestFiles
   		NAME ${testname}-test
@@ -27,7 +27,7 @@ add_file_test(test-kernbase-i386 test_kernbase_i386.cc i386.raw)
 
 macro(add_groundtruth_file_test testname testpath testdata gtruthdata)
     add_executable(${testname} ${testpath})
-    target_link_libraries(${testname} wintrospection
+    target_link_libraries(${testname} osi
     				      iohal offset gtest_main)
 	ExternalData_Add_Test(TestFiles
   		NAME ${testname}-test

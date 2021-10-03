@@ -1,4 +1,6 @@
-<h1 align="center">:construction: Operating System Introspection :construction:</h1>
+<h1 align="center">:construction: Libosi :construction:</h1>
+
+Operating System Introspection library to support PANDA.
 
 ### Prerequisites
 
@@ -12,7 +14,7 @@ apt-get install cmake ninja-build rapidjson-dev
 
 ### Building
 
-To build OSI, from the root of this repo run:
+To build libosi, from the root of this repo run:
 
 ```bash
 mkdir build && cd $_

@@ -1,5 +1,5 @@
 #include "offset/offset.h"
-#include "wintrospection/wintrospection.h"
+#include "osi/windows/wintrospection.h"
 #include "gtest/gtest.h"
 
 TEST(WintroBasicTest, Ctors)

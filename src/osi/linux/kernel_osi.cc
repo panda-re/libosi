@@ -1,6 +1,6 @@
 
-#include "lintrospection/iterator.h"
-#include "lintrospection/lintrospection.h"
+#include "osi/linux/iterator.h"
+#include "osi/linux/lintrospection.h"
 
 #include "iohal/memory/common.h"
 #include "iohal/memory/virtual_memory_translator.h"

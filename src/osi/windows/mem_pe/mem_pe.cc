@@ -2,8 +2,8 @@
 #include <stdint.h>
 
 #include "offset/windows_common.h"
-#include "wintrospection/pe.h"
-#include "wintrospection/wintrospection.h"
+#include "osi/windows/pe.h"
+#include "osi/windows/wintrospection.h"
 
 struct mem_pe {
     struct WindowsProcessOSI* process_osi;

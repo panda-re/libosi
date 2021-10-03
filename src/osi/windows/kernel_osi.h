@@ -10,7 +10,7 @@
 #include <stdint.h>
 
 #include "windows_static_offsets.h"
-#include "wintrospection/iterator.h"
+#include "osi/windows/iterator.h"
 #include <iohal/memory/virtual_memory.h>
 #include <offset/i_t.h>
 #include <offset/offset.h>

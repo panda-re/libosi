@@ -1,4 +1,4 @@
-set(CPACK_PACKAGE_NAME "osi")
+set(CPACK_PACKAGE_NAME "libosi")
 set(CPACK_PACKAGE_DESCRIPTION "Operating System Introspection Support for PANDA plugins")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Operating System Introspection Support for PANDA plugins")
 set(CPACK_PACKAGE_VENDOR "PANDA")

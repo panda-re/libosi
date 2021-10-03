@@ -2,7 +2,7 @@
 
 #include "windows_handles.h"
 #include "windows_static_offsets.h"
-#include "wintrospection/wintrospection.h"
+#include "osi/windows/wintrospection.h"
 
 #define TABLE_MASK ~0x7
 #define HANDLE_ENTRY_SIZE_64 0x10

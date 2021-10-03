@@ -16,9 +16,9 @@
 
 #include "windows_handles.h"
 #include "windows_static_offsets.h"
-#include "wintrospection/iterator.h"
-#include "wintrospection/ustring.h"
-#include "wintrospection/wintrospection.h"
+#include "osi/windows/iterator.h"
+#include "osi/windows/ustring.h"
+#include "osi/windows/wintrospection.h"
 
 struct WindowsProcessList {
     uint64_t head;

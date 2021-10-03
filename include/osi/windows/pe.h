@@ -1,6 +1,6 @@
 #pragma once
 
-#include "wintrospection/wintrospection.h"
+#include "osi/windows/wintrospection.h"
 #include <iohal/memory/virtual_memory.h>
 #include <offset/windows_common.h>
 

@@ -17,8 +17,8 @@
 #include "offset/i_t.h"
 #include "offset/offset.h"
 
-#include "lintrospection/iterator.h"
-#include "lintrospection/lintrospection.h"
+#include "osi/linux/iterator.h"
+#include "osi/linux/lintrospection.h"
 
 #include "kernel_osi.h"
 
