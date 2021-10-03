@@ -1,4 +1,4 @@
-<h1 align="center">:construction: System Introspection :construction:</h1>
+<h1 align="center">:construction: Operating System Introspection :construction:</h1>
 
 ### Prerequisites
 
@@ -12,7 +12,7 @@ apt-get install cmake ninja-build rapidjson-dev
 
 ### Building
 
-To build wintrospection, from the root of this repo run:
+To build OSI, from the root of this repo run:
 
 ```bash
 mkdir build && cd $_
@@ -33,9 +33,8 @@ Pull Requests are welcome.
 
 ### To-Do
 
-:pushpin: Is there a more catchy name for this?  
-:pushpin: Support structs that aren't kernel types, such as \_FILE\_RENAME\_INFORMATION  
 :pushpin: Support pointers to pointers in offset  
 :pushpin: Offset should have something like a sizeof() function to better support arrays  
-:pushpin: Include tools for generating new profiles.  
 :pushpin: Find a place to host memory snapshots for wintrospection tests  
+:pushpin: Include tools and documentation for generating new profiles.  
+:pushpin: Load offsets from disk, rather than having a large dictionary which needs to be compiled   
