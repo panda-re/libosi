@@ -39,13 +39,13 @@ target_include_directories(iohal-static PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
 
-set(OFFSET_SRCS src/offset/profiles/win7_sp0_x86.h src/offset/profiles/win7_sp0_x86.cpp
-             src/offset/profiles/win7_sp1_x86.h src/offset/profiles/win7_sp1_x86.cpp
-             src/offset/profiles/win7_sp0_x64.h src/offset/profiles/win7_sp0_x64.cpp
-             src/offset/profiles/win7_sp1_x64.h src/offset/profiles/win7_sp1_x64.cpp
-             src/offset/profiles/debian8_11_x86.h src/offset/profiles/debian8_11_x86.cpp
-             src/offset/profiles/debian8_11_x64.h src/offset/profiles/debian8_11_x64.cpp
-             src/offset/core.cc)
+set(OFFSET_SRCS src/offset/core.cc
+            src/offset/profiles/win7_sp0_x86.h src/offset/profiles/win7_sp0_x86.cpp
+            src/offset/profiles/win7_sp1_x86.h src/offset/profiles/win7_sp1_x86.cpp
+            src/offset/profiles/win7_sp0_x64.h src/offset/profiles/win7_sp0_x64.cpp
+            src/offset/profiles/win7_sp1_x64.h src/offset/profiles/win7_sp1_x64.cpp
+            src/offset/profiles/debian8_11_x86.h src/offset/profiles/debian8_11_x86.cpp
+            src/offset/profiles/debian8_11_x64.h src/offset/profiles/debian8_11_x64.cpp)
 
 # Compile all the .o files once
 add_library(offset-obj OBJECT ${OFFSET_SRCS})
@@ -68,7 +68,8 @@ target_include_directories(offset-static PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/offset>
     $<INSTALL_INTERFACE:include>)
 
-set(OSI_SRCS src/osi/windows/kernel_osi.cc
+set(OSI_SRCS src/osi/windows/manager.cc
+	        src/osi/windows/kernel_osi.cc
                 src/osi/windows/api.cc
                 src/osi/windows/windows_handles.cc
                 src/osi/windows/mem_pe/mem_pe.cc
@@ -92,7 +93,7 @@ target_include_directories(osi-static PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<INSTALL_INTERFACE:include>)
 
-target_link_libraries(osi ${GLIB_PKG_LIBRARIES})
+target_link_libraries(osi offset ${GLIB_PKG_LIBRARIES})
 
 # Install everything
 install(TARGETS osi osi-static offset offset-static iohal iohal-static

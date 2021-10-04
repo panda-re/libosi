@@ -43,8 +43,8 @@ typedef void (*FreePhysicalMemoryFunc)(struct PhysicalMemory* this_pm);
  * This struct is intended to wrap a class to make it easier to
  * expose as a C API. \ref PhysicalMemory.opaque is a pointer to
  * the backing implementation and \ref PhysicalMemory.upper_bound,
- * \ref PhysicalMemory.read_physical_memory, and
- * \ref PhysicalMemory.free_physical_memory wrap member functions.
+ * \ref PhysicalMemory.read, and \ref PhysicalMemory.free wrap member
+ * functions.
  *
  */
 struct PhysicalMemory {
@@ -53,7 +53,7 @@ struct PhysicalMemory {
 
     /** \brief pointer to implementation
      *
-     * Must only be freed with \ref PhysicalMemory.free_physical_memory
+     * Must only be freed with \ref PhysicalMemory.free
      */
     void* opaque;
 

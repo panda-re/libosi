@@ -54,7 +54,8 @@ Currently, the code is formatted with clang-format, using the style provided in 
 
 This library currently supports Windows 7 and Debian 8.11 (linux kernel v3.16).
 Support for similar Windows and Linux kernels is as simple as adding a new profile to `src/offset/profiles`.
-If the kernel has significantly changed since the supported version, API functions may need to be added/ported.
+However, in some kernels, struct names may have changed. In these cases, you may need to add/port
+API functions in `src/osi/windows/api.cc`, where these names are assumed.
 
 Support is currently limited to i386 and amd64. Support for more architectures includes writing
 a new translator within `src/iohal/translators`.

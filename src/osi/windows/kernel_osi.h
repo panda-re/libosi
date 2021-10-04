@@ -9,8 +9,8 @@
 #include <map>
 #include <stdint.h>
 
-#include "windows_static_offsets.h"
 #include "osi/windows/iterator.h"
+#include "windows_static_offsets.h"
 #include <iohal/memory/virtual_memory.h>
 #include <offset/i_t.h>
 #include <offset/offset.h>
@@ -23,4 +23,4 @@ bool scan_for_version64(VirtualMemory* vmem, vm_addr_t kdbg, vm_addr_t kernel_ba
                         vm_addr_t* version64);
 vm_addr_t get_address_active_process_head(VirtualMemory* vmem, vm_addr_t kdbg);
 
-#endif // __OSI_KERNELs
+#endif // __OSI_KERNEL

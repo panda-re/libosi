@@ -14,11 +14,11 @@
 #include <offset/i_t.h>
 #include <offset/offset.h>
 
-#include "windows_handles.h"
-#include "windows_static_offsets.h"
 #include "osi/windows/iterator.h"
 #include "osi/windows/ustring.h"
 #include "osi/windows/wintrospection.h"
+#include "windows_handles.h"
+#include "windows_static_offsets.h"
 
 struct WindowsProcessList {
     uint64_t head;
@@ -81,8 +81,8 @@ struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi)
 {
     auto plist = new struct WindowsProcessList;
 
-    plist->head = kosi->details->PsActiveProcessHead;
-    plist->head -= ((kosi->details->pointer_width == 8)
+    plist->head = kosi->details.PsActiveProcessHead;
+    plist->head -= ((kosi->details.pointer_width == 8)
                         ? static_offsets::amd64::ACTIVEPROCESSLINK_OFFSET
                         : static_offsets::i386::ACTIVEPROCESSLINK_OFFSET);
     plist->head = get_next_process_link(kosi, plist->head);
@@ -661,7 +661,7 @@ void uninit_process_osi(struct WindowsProcessOSI* process_osi)
 static osi::i_t kosi_get_current_process_object(struct WindowsKernelOSI* kosi)
 {
     osi::i_t kpcr =
-        osi::i_t(kosi->system_vmem, kosi->kernel_tlib, kosi->details->kpcr, "_KPCR");
+        osi::i_t(kosi->system_vmem, kosi->kernel_tlib, kosi->details.kpcr, "_KPCR");
 
     // if (is_32bit() || is_winxp()) {
     osi::i_t eprocess;
@@ -689,7 +689,7 @@ struct WindowsProcess* kosi_get_current_process(struct WindowsKernelOSI* kosi)
 
 uint64_t kosi_get_current_tid(struct WindowsKernelOSI* kosi)
 {
-    osi::i_t kpcr(kosi->system_vmem, kosi->kernel_tlib, kosi->details->kpcr, "_KPCR");
+    osi::i_t kpcr(kosi->system_vmem, kosi->kernel_tlib, kosi->details.kpcr, "_KPCR");
 
     osi::i_t ethread;
     if (kosi->system_vmem->get_pointer_width() == 4) {
@@ -709,7 +709,7 @@ struct WindowsHandleObject* resolve_handle(struct WindowsKernelOSI* kosi, uint64
     init_process_osi(kosi, posi, kosi_get_current_process_address(kosi));
 
     osi::i_t obj_header =
-        resolve_handle_table_entry(posi, handle, kosi->details->pointer_width > 4);
+        resolve_handle_table_entry(posi, handle, kosi->details.pointer_width > 4);
     if (!obj_header.get_address()) {
         uninit_process_osi(posi);
         std::free(posi);

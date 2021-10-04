@@ -1,5 +1,6 @@
 #include "iohal/memory/virtual_memory.h"
 #include "offset/offset.h"
+#include "osi/windows/manager.h"
 #include "osi/windows/wintrospection.h"
 #include <cstdlib>
 #include <ctype.h>
@@ -20,30 +21,21 @@ int main(int argc, char* argv[])
     uint64_t addr = std::strtoull(argv[5], NULL, 16);
     uint64_t size = atoi(argv[6]);
 
-    struct WindowsKernelDetails kdetails = {0};
-    struct WindowsKernelOSI kosi = {0};
-    kdetails.pointer_width = 8;
-    kdetails.kpcr = kpcr;
-    pm_addr_t asid = asid_arg;
-    bool pae = false;
+    WindowsKernelManager manager = WindowsKernelManager("windows-64-7sp1");
 
-    kosi.pmem = load_physical_memory_snapshot(testfile);
-    kosi.kernel_tlib = load_type_library("windows-64-7sp1");
-    if (kosi.pmem == nullptr) {
+    auto pmem = load_physical_memory_snapshot(testfile);
+    if (pmem == nullptr) {
         fprintf(stderr, "Failed to read physical memory snapshot\n");
         return 1;
     }
-    if (kosi.kernel_tlib == nullptr) {
-        fprintf(stderr, "Failed to load type library\n");
-        return 2;
-    }
-    if (!initialize_windows_kernel_osi(&kosi, &kdetails, asid, false,
-                                       "windows-64-7sp1")) {
+    if (!manager.initialize(pmem, 8, asid_arg, kpcr)) {
         fprintf(stderr, "Failed to initialize windows\n");
         return 3;
     }
 
-    auto plist = get_process_list(&kosi);
+    struct WindowsKernelOSI* kosi = manager.get_kernel_object();
+
+    auto plist = get_process_list(kosi);
     auto process = process_list_next(plist);
     while (process != nullptr) {
         auto pid = process_get_pid(process);
@@ -63,7 +55,7 @@ int main(int argc, char* argv[])
 
     auto bytes = std::vector<uint8_t>(size);
     struct WindowsProcessOSI posi = {0};
-    if (!init_process_osi(&kosi, &posi, process_get_eprocess(process))) {
+    if (!init_process_osi(kosi, &posi, process_get_eprocess(process))) {
         fprintf(stderr, "Failed to init process introspection\n");
         return 6;
     }

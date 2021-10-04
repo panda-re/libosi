@@ -21,7 +21,7 @@ struct WindowsKernelOSI {
     struct StructureTypeLibrary* kernel_tlib;
     struct PhysicalMemory* pmem;
     std::shared_ptr<VirtualMemory> system_vmem;
-    struct WindowsKernelDetails* details;
+    struct WindowsKernelDetails details;
 };
 
 struct WindowsProcessOSI {
@@ -39,9 +39,6 @@ struct WindowsProcessList;
 struct WindowsModuleList;
 struct WindowsHandleObject;
 
-bool initialize_windows_kernel_osi(struct WindowsKernelOSI* kosi,
-                                   struct WindowsKernelDetails* kdetails,
-                                   uint64_t current_asid, bool pae, const char* profile);
 uint64_t kosi_get_current_process_address(struct WindowsKernelOSI* kosi);
 struct WindowsProcess* kosi_get_current_process(struct WindowsKernelOSI* kosi);
 uint64_t kosi_get_current_tid(struct WindowsKernelOSI* kosi);
