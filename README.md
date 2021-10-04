@@ -7,9 +7,9 @@ Operating System Introspection library to support PANDA.
 Install dependencies. On Ubuntu, this can be done with:
 
 ```bash
-apt-get update
+sudo apt-get update
 
-apt-get install cmake ninja-build rapidjson-dev
+sudo apt-get install cmake ninja-build rapidjson-dev
 ```
 
 ### Building
@@ -22,6 +22,34 @@ cmake -GNinja ..
 ninja
 ```
 
+### Installing
+
+Installing libosi includes running:
+
+```bash
+cd build && ninja package
+sudo dpkg -i libosi-[version].deb
+```
+
+### Testing
+
+Testing is currently implemented for offset and iohal. To run the tests, you will 
+first need to install `libgtest-dev` and enable testing:
+
+```bash
+sudo apt-get install libgtest-dev
+
+cd build
+cmake -GNinja -DENABLE_TESTING=ON ..
+ninja
+```
+
+You can then run the tests with just `ninja test`.
+
+### Style
+
+Currently, the code is formatted with clang-format, using the style provided in `.clang-format`.
+
 ### Development
 
 This library currently supports Windows 7 and Debian 8.11 (linux kernel v3.16).
@@ -33,10 +61,11 @@ a new translator within `src/iohal/translators`.
 
 Pull Requests are welcome.
 
-### To-Do
+#### To-Do
 
 :pushpin: Support pointers to pointers in offset  
 :pushpin: Offset should have something like a sizeof() function to better support arrays  
-:pushpin: Find a place to host memory snapshots for wintrospection tests  
-:pushpin: Include tools and documentation for generating new profiles.  
 :pushpin: Load offsets from disk, rather than having a large dictionary which needs to be compiled   
+:pushpin: Find a place to host memory snapshots for wintrospection tests  
+:pushpin: Include tools and documentation for generating new profiles  
+:pushpin: Run cpp-check over the code before every commit  
