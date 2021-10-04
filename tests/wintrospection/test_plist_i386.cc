@@ -1,5 +1,6 @@
 #include "iohal/memory/virtual_memory.h"
 #include "offset/offset.h"
+#include "osi/windows/manager.h"
 #include "osi/windows/wintrospection.h"
 #include "gtest/gtest.h"
 #include <set>
@@ -56,26 +57,18 @@ TEST(TestI386Plist, Win7SP1I386)
     ASSERT_TRUE(testfile) << "Couldn't load input test file!";
     ASSERT_TRUE(access(testfile, R_OK) == 0) << "Could not read input file";
 
-    struct WindowsKernelDetails kdetails = {0};
-    struct WindowsKernelOSI kosi = {0};
-    kdetails.pointer_width = 4;
-    kdetails.kpcr = 0x82933c00;
-    kdetails.kdbg = 0x82932c28;
-    pm_addr_t asid = 0x185000;
-    bool pae = false;
+    WindowsKernelManager manager = WindowsKernelManager("windows-32-7sp1");
 
-    kosi.pmem = load_physical_memory_snapshot(testfile);
-    kosi.kernel_tlib = load_type_library("windows-32-7sp1");
-    ASSERT_TRUE(kosi.pmem != nullptr) << "failed to load physical memory snapshot";
-    ASSERT_TRUE(kosi.kernel_tlib != nullptr) << "failed to load type library";
+    auto pmem = load_physical_memory_snapshot(testfile);
+    ASSERT_TRUE(pmem != nullptr) << "failed to load physical memory snapshot";
 
-    ASSERT_TRUE(
-        initialize_windows_kernel_osi(&kosi, &kdetails, asid, false, "windows-32-7sp1"))
+    struct WindowsKernelOSI* kosi = manager.get_kernel_object();
+
+    ASSERT_TRUE(manager.initialize(pmem, 4, 0x185000, 0x82933c00))
         << "Failed to initialize kernel osi";
 
-    auto plist = get_process_list(&kosi);
+    auto plist = get_process_list(kosi);
     ASSERT_TRUE(plist != nullptr) << "Failed to get process list";
-    ;
 
     for (unsigned int ix = 0; ix < EXPECTED_RESULTS.size(); ++ix) {
         auto process = process_list_next(plist);
@@ -98,8 +91,7 @@ TEST(TestI386Plist, Win7SP1I386)
     ASSERT_TRUE(process_list_next(plist) == nullptr) << "Found too many processes";
 
     free_process_list(plist);
-    kosi.system_vmem.reset();
-    kosi.pmem->free(kosi.pmem);
+    pmem->free(pmem);
 }
 
 int main(int argc, char** argv)

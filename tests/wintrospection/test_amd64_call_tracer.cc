@@ -1,6 +1,7 @@
 #include <offset/i_t.h>
 #include <offset/offset.h>
 
+#include "osi/windows/manager.h"
 #include "osi/windows/wintrospection.h"
 #include "gtest/gtest.h"
 #include <iohal/memory/virtual_memory.h>
@@ -17,22 +18,15 @@ TEST(TestAmd64CallTracer, Win7SP1Amd64)
     ASSERT_TRUE(testfile) << "Couldn't load input test file!";
     ASSERT_TRUE(access(testfile, R_OK) == 0) << "Could not read input file";
 
-    struct WindowsKernelDetails kdetails = {0};
-    struct WindowsKernelOSI s_kosi = {0};
-    kdetails.pointer_width = 8;
-    kdetails.kpcr = 0xfffff80002834d00;
-    // kdetails.kdbg = 0xfffff8000284b0a0;
-    pm_addr_t asid = 0x335ef000;
-    bool pae = false;
+    WindowsKernelManager manager = WindowsKernelManager("windows-64-7sp1");
 
-    s_kosi.pmem = load_physical_memory_snapshot(testfile);
-    s_kosi.kernel_tlib = load_type_library("windows-64-7sp1");
-    ASSERT_TRUE(s_kosi.pmem != nullptr) << "failed to load physical memory snapshot";
-    ASSERT_TRUE(s_kosi.kernel_tlib != nullptr) << "failed to load type library";
-    ASSERT_TRUE(initialize_windows_kernel_osi(&s_kosi, &kdetails, asid, pae))
+    auto pmem = load_physical_memory_snapshot(testfile);
+    ASSERT_TRUE(pmem != nullptr) << "failed to load physical memory snapshot";
+
+    struct WindowsKernelOSI* kosi = manager.get_kernel_object();
+
+    ASSERT_TRUE(manager.initialize(pmem, 8, 0x335ef000, 0xfffff80002834d00))
         << "Failed to initialize kernel osi";
-
-    struct WindowsKernelOSI* kosi = &s_kosi;
 
     auto proc = kosi_get_current_process(kosi);
     WindowsProcessOSI posi;
@@ -55,8 +49,7 @@ TEST(TestAmd64CallTracer, Win7SP1Amd64)
     fprintf(stderr, "fmodule_base: %lu\n", fmodule_base);
     fprintf(stderr, "fmodule_size: %lu\n", fmodule_size);
 
-    s_kosi.system_vmem.reset();
-    s_kosi.pmem->free(s_kosi.pmem);
+    pmem->free(pmem);
 }
 
 int main(int argc, char** argv)
