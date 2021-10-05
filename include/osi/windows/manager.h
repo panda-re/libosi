@@ -22,10 +22,46 @@ public:
         m_initialized = false;
     }
 
+    ~WindowsKernelManager()
+    {
+        m_kosi->system_vmem.reset();
+        m_kosi.reset();
+    }
+
     bool initialize(struct PhysicalMemory* interface, uint8_t pointer_width,
                     uint64_t system_asid, vm_addr_t kpcr, bool pae_enabled = false);
 
     struct WindowsKernelOSI* get_kernel_object() { return m_kosi.get(); }
+
+    osi::i_t get_type(vm_addr_t address, std::string type);
+};
+
+class WindowsProcessManager
+{
+protected:
+    std::shared_ptr<WindowsProcessOSI> m_posi;
+
+    bool m_initialized;
+
+public:
+    WindowsProcessManager()
+    {
+        m_posi = std::make_shared<WindowsProcessOSI>();
+        m_initialized = false;
+    }
+
+    ~WindowsProcessManager()
+    {
+        m_posi->vmem.reset();
+        m_posi.reset();
+    }
+
+    bool initialize(struct WindowsKernelOSI* kosi, uint64_t eprocess = 0,
+                    uint64_t pid = 0);
+
+    struct WindowsProcessOSI* get_process_object() { return m_posi.get(); }
+
+    osi::i_t get_process();
 
     osi::i_t get_type(vm_addr_t address, std::string type);
 };

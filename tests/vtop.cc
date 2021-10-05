@@ -33,34 +33,15 @@ int main(int argc, char* argv[])
         return 3;
     }
 
-    struct WindowsKernelOSI* kosi = manager.get_kernel_object();
-
-    auto plist = get_process_list(kosi);
-    auto process = process_list_next(plist);
-    while (process != nullptr) {
-        auto pid = process_get_pid(process);
-        if (pid == target_pid) {
-            break;
-        }
-        free_process(process);
-        process = process_list_next(plist);
-    }
-
-    if (process == nullptr) {
-        fprintf(stderr, "Could not find target pid: %u\n", target_pid);
+    auto proc_manager = WindowsProcessManager();
+    if (!proc_manager.initialize(manager.get_kernel_object(), 0, target_pid)) {
+        fprintf(stderr, "Could not initialize with target pid: %u\n", target_pid);
         return 7;
     }
-
-    fprintf(stderr, "Starting with pid %u\n", target_pid);
+    auto posi = proc_manager.get_process_object();
 
     auto bytes = std::vector<uint8_t>(size);
-    struct WindowsProcessOSI posi = {0};
-    if (!init_process_osi(kosi, &posi, process_get_eprocess(process))) {
-        fprintf(stderr, "Failed to init process introspection\n");
-        return 6;
-    }
-
-    auto status = process_vmem_read(&posi, addr, bytes.data(), size);
+    auto status = process_vmem_read(posi, addr, bytes.data(), size);
     if (!TRANSLATE_SUCCEEDED(status)) {
         fprintf(stderr, "Failed to read memory with status: %d\n", status);
         return 3;

@@ -87,3 +87,58 @@ osi::i_t WindowsKernelManager::get_type(vm_addr_t address, std::string type)
 {
     return osi::i_t(m_kosi->system_vmem, m_kosi->kernel_tlib, address, type);
 }
+
+bool WindowsProcessManager::initialize(struct WindowsKernelOSI* kosi, uint64_t eprocess,
+                                       uint64_t pid)
+{
+    if (eprocess == 0 && pid == 0) {
+        fprintf(stderr, "Must provdied either the address or the pid of the process");
+        return false;
+    }
+
+    if (pid != 0 && eprocess == 0) {
+        auto plist = get_process_list(kosi);
+        if (!plist) {
+            return false;
+        }
+
+        struct WindowsProcess* proc;
+        while (proc = process_list_next(plist)) {
+            if (pid == process_get_pid(proc)) {
+                eprocess = process_get_eprocess(proc);
+                free_process(proc);
+                break;
+            }
+            free_process(proc);
+        }
+        free_process_list(plist);
+    }
+
+    // populate basics
+    m_posi->tlib = kosi->kernel_tlib; // TODO change if wow64
+    m_posi->vmem = std::make_shared<VirtualMemory>(*kosi->system_vmem);
+    m_posi->kosi = kosi;
+    m_posi->eprocess_address = eprocess;
+
+    // context switch
+    osi::i_t proc(m_posi->vmem, m_posi->tlib, eprocess, "_EPROCESS");
+    uint64_t new_asid = proc["Pcb"]["DirectoryTableBase"].getu();
+    m_posi->vmem->set_asid(new_asid);
+
+    // Get a couple fields for identification
+    m_posi->createtime = proc["CreateTime"].get64();
+    m_posi->pid = proc["UniqueProcessId"].getu();
+
+    m_initialized = true;
+    return true;
+}
+
+osi::i_t WindowsProcessManager::get_type(vm_addr_t address, std::string type)
+{
+    return osi::i_t(m_posi->vmem, m_posi->tlib, address, type);
+}
+
+osi::i_t WindowsProcessManager::get_process()
+{
+    return osi::i_t(m_posi->vmem, m_posi->tlib, m_posi->eprocess_address, "_EPROCESS");
+}

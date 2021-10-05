@@ -15,8 +15,10 @@
 #include <offset/offset.h>
 
 #include "osi/windows/iterator.h"
+#include "osi/windows/manager.h"
 #include "osi/windows/ustring.h"
 #include "osi/windows/wintrospection.h"
+
 #include "windows_handles.h"
 #include "windows_static_offsets.h"
 
@@ -39,7 +41,7 @@ struct WindowsProcess {
 };
 
 struct WindowsModuleList {
-    struct WindowsProcessOSI* posi;
+    std::unique_ptr<WindowsProcessManager> posi;
     std::vector<uint64_t>* module_list;
     std::map<uint64_t, bool>* modules;
     uint16_t idx;
@@ -63,7 +65,7 @@ struct WindowsModuleEntry {
 struct WindowsHandleObject {
     uint8_t type_index;
     uint64_t pointer;
-    struct WindowsProcessOSI* posi;
+    std::unique_ptr<WindowsProcessManager> posi;
 };
 
 uint64_t get_next_process_link(struct WindowsKernelOSI* kosi, uint64_t start_address);
@@ -353,14 +355,14 @@ struct WindowsModuleList* get_module_list(struct WindowsKernelOSI* kosi,
     mlist->module_list = new std::vector<uint64_t>();
     mlist->modules = new std::map<uint64_t, bool>();
 
-    // Deep copy, we are going to change the asid
-    mlist->posi =
-        (struct WindowsProcessOSI*)std::calloc(1, sizeof(struct WindowsProcessOSI));
-    init_process_osi(kosi, mlist->posi, process_address);
+    mlist->posi = std::unique_ptr<WindowsProcessManager>(new WindowsProcessManager());
+    if (!(mlist->posi->initialize(kosi, process_address))) {
+        free_module_list(mlist);
+        return nullptr;
+    }
 
     mlist->idx = 0;
-    osi::i_t proc(mlist->posi->vmem, mlist->posi->tlib, mlist->posi->eprocess_address,
-                  "_EPROCESS");
+    auto proc = mlist->posi->get_process();
 
     if (is_wow64) {
         try {
@@ -441,20 +443,14 @@ struct WindowsModuleEntry* create_module_entry(struct WindowsModuleList* mlist,
     if (is_wow64) {
         auto mentry =
             (struct WindowsModuleEntry*)std::calloc(1, sizeof(struct WindowsModuleEntry));
-        osi::i_t data_table_entry(mlist->posi->vmem, mlist->posi->tlib, module_entry_addr,
-                                  "_LDR_DATA_TABLE_ENTRY32");
+
+        auto data_table_entry =
+            mlist->posi->get_type(module_entry_addr, "_LDR_DATA_TABLE_ENTRY32");
+
         mentry->module_entry = module_entry_addr;
         // No point if we can't capture these
         try {
-            // fprintf(stderr, "MODULE ENTRY: %lx\n", mentry->module_entry);
-
             mentry->base_address = data_table_entry["DllBase"].get32();
-            /*
-            if (mentry->base_address == 0) {
-                std::free(mentry);
-                return nullptr;
-            }
-            */
             mentry->modulesize = data_table_entry["SizeOfImage"].get32();
             mentry->checksum = data_table_entry["CheckSum"].get32();
             mentry->entrypoint = data_table_entry["EntryPoint"].get32();
@@ -469,22 +465,6 @@ struct WindowsModuleEntry* create_module_entry(struct WindowsModuleList* mlist,
             osi::ustring dllpath(data_table_entry["FullDllName"]);
             std::string dllpath_utf8 = maybe_parse_unicode_string(dllpath);
             strncpy(mentry->dllpath, dllpath_utf8.c_str(), MAX_PATH_SIZE - 1);
-
-            /*
-            fprintf(stderr, "WOW64 base_address: %lu\n",
-            module_entry_get_base_address(mentry));
-            fprintf(stderr, "WOW64 modulesize: %lu\n",
-            module_entry_get_modulesize(mentry));
-            fprintf(stderr, "WOW64 checksum: %lu\n", module_entry_get_checksum(mentry));
-            fprintf(stderr, "WOW64 entrypoint: %lu\n",
-            module_entry_get_entrypoint(mentry));
-            fprintf(stderr, "WOW64 flags: %lu\n", module_entry_get_flags(mentry));
-            fprintf(stderr, "WOW64 TimeDateStamp: %lu\n",
-            module_entry_get_timedatestamp(mentry));
-            fprintf(stderr, "WOW64 loadcount: %lu\n", module_entry_get_loadcount(mentry));
-            fprintf(stderr, "WOW64 DLLPATH: %s\n", dllpath_utf8.c_str());
-            */
-
         } catch (...) {
             free_module_entry(mentry);
             return nullptr;
@@ -494,21 +474,13 @@ struct WindowsModuleEntry* create_module_entry(struct WindowsModuleList* mlist,
 
     auto mentry =
         (struct WindowsModuleEntry*)std::calloc(1, sizeof(struct WindowsModuleEntry));
-    osi::i_t data_table_entry(mlist->posi->vmem, mlist->posi->tlib, module_entry_addr,
-                              "_LDR_DATA_TABLE_ENTRY");
+    auto data_table_entry =
+        mlist->posi->get_type(module_entry_addr, "_LDR_DATA_TABLE_ENTRY");
 
     mentry->module_entry = module_entry_addr;
     // No point if we can't capture these
     try {
-        // fprintf(stderr, "MODULE ENTRY: %lx\n", mentry->module_entry);
-
         mentry->base_address = data_table_entry["DllBase"].getu();
-
-        /*if (mentry->base_address == 0) {
-            std::free(mentry);
-            return nullptr;
-        }
-        */
         mentry->modulesize = data_table_entry["SizeOfImage"].get32();
         mentry->checksum = data_table_entry["CheckSum"].get32();
         mentry->entrypoint = data_table_entry["EntryPoint"].getu();
@@ -555,17 +527,12 @@ struct WindowsModuleEntry* module_list_next(struct WindowsModuleList* mlist)
 
 struct WindowsProcessOSI* module_list_get_osi(struct WindowsModuleList* mlist)
 {
-    return mlist->posi;
+    return mlist->posi->get_process_object();
 }
 
 void free_module_list(struct WindowsModuleList* mlist)
 {
     if (mlist) {
-        if (mlist->posi) {
-            uninit_process_osi(mlist->posi);
-            delete mlist->posi;
-        }
-
         delete mlist->module_list;
         delete mlist->modules;
         std::free(mlist);
@@ -611,51 +578,6 @@ const char* module_entry_get_dllpath(struct WindowsModuleEntry* me)
 const char* module_entry_get_dllname(struct WindowsModuleEntry* me)
 {
     return me->dllname;
-}
-
-bool init_process_osi_from_pid(struct WindowsKernelOSI* kosi,
-                               struct WindowsProcessOSI* process_osi, uint64_t target_pid)
-{
-    auto plist = get_process_list(kosi);
-    if (!plist) {
-        return false;
-    }
-    auto process = process_list_next(plist);
-    while (process) {
-        auto pid = process_get_pid(process);
-        if (pid == target_pid) {
-            auto eprocess_addr = process_get_eprocess(process);
-            free_process(process);
-            free_process_list(plist);
-            return init_process_osi(kosi, process_osi, eprocess_addr);
-        }
-        free_process(process);
-        process = process_list_next(plist);
-    }
-    free_process_list(plist);
-    return false;
-}
-
-bool init_process_osi(struct WindowsKernelOSI* kosi,
-                      struct WindowsProcessOSI* process_osi, uint64_t eprocess_address)
-{
-    process_osi->tlib = kosi->kernel_tlib; // TODO change if wow64
-    process_osi->vmem = std::make_shared<VirtualMemory>(*kosi->system_vmem);
-    process_osi->kosi = kosi;
-    process_osi->eprocess_address = eprocess_address;
-    osi::i_t proc(process_osi->vmem, process_osi->tlib, eprocess_address, "_EPROCESS");
-    uint64_t new_asid = proc["Pcb"]["DirectoryTableBase"].getu();
-    process_osi->vmem->set_asid(new_asid);
-    // Get the basics
-    process_osi->createtime = proc["CreateTime"].get64();
-    process_osi->pid = proc["UniqueProcessId"].getu();
-    return true;
-}
-
-void uninit_process_osi(struct WindowsProcessOSI* process_osi)
-{
-    process_osi->vmem.reset(); // TODO Process OSI should be a class
-                               // with a destructor
 }
 
 static osi::i_t kosi_get_current_process_object(struct WindowsKernelOSI* kosi)
@@ -704,24 +626,24 @@ uint64_t kosi_get_current_tid(struct WindowsKernelOSI* kosi)
 
 struct WindowsHandleObject* resolve_handle(struct WindowsKernelOSI* kosi, uint64_t handle)
 {
-    struct WindowsProcessOSI* posi =
-        (struct WindowsProcessOSI*)std::calloc(1, sizeof(struct WindowsProcessOSI));
-    init_process_osi(kosi, posi, kosi_get_current_process_address(kosi));
+    struct WindowsHandleObject* h =
+        (struct WindowsHandleObject*)std::calloc(1, sizeof(struct WindowsHandleObject));
 
+    h->posi = std::unique_ptr<WindowsProcessManager>();
+    h->posi->initialize(kosi, kosi_get_current_process_address(kosi));
+
+    auto posi = h->posi->get_process_object();
     osi::i_t obj_header =
         resolve_handle_table_entry(posi, handle, kosi->details.pointer_width > 4);
+
     if (!obj_header.get_address()) {
-        uninit_process_osi(posi);
-        std::free(posi);
+        free_handle(h);
         return nullptr;
     }
 
-    struct WindowsHandleObject* h =
-        (struct WindowsHandleObject*)std::calloc(1, sizeof(struct WindowsHandleObject));
     try {
         h->type_index = obj_header["TypeIndex"].get8();
         h->pointer = obj_header["Body"].get_address();
-        h->posi = posi;
     } catch (std::runtime_error) {
         free_handle(h);
         return nullptr;
@@ -738,16 +660,12 @@ uint8_t handle_get_type(struct WindowsHandleObject* handle) { return handle->typ
 
 struct WindowsProcessOSI* handle_get_context(struct WindowsHandleObject* handle)
 {
-    return handle->posi;
+    return handle->posi->get_process_object();
 }
 
 void free_handle(struct WindowsHandleObject* handle)
 {
     if (handle) {
-        if (handle->posi) {
-            uninit_process_osi(handle->posi);
-            std::free(handle->posi);
-        }
         std::free(handle);
     }
 }

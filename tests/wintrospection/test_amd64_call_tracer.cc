@@ -29,10 +29,11 @@ TEST(TestAmd64CallTracer, Win7SP1Amd64)
         << "Failed to initialize kernel osi";
 
     auto proc = kosi_get_current_process(kosi);
-    WindowsProcessOSI posi;
-    ASSERT_TRUE(init_process_osi_from_pid(kosi, &posi, process_get_pid(proc)));
-    osi::i_t eproc =
-        osi::i_t(posi.vmem, kosi->kernel_tlib, posi.eprocess_address, "_EPROCESS");
+
+    auto proc_manager = WindowsProcessManager();
+    ASSERT_TRUE(proc_manager.initialize(kosi, process_get_pid(proc)));
+
+    auto eproc = proc_manager.get_process();
     ASSERT_TRUE(eproc.get_address() == 0xfffffa80021bb430) << "wrong eproc addr";
     osi::i_t peb = eproc("Peb");
     ASSERT_TRUE(peb.get_address() == 0x7FFFFFDF000) << "wrong peb addr";

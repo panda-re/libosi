@@ -53,12 +53,6 @@ uint64_t get_pid_from_asid(struct WindowsKernelOSI* kosi, uint64_t asid);
 uint64_t get_eproc_addr_from_asid(struct WindowsKernelOSI* kosi, uint64_t asid);
 void free_process_list(struct WindowsProcessList* plist);
 
-bool init_process_osi_from_pid(struct WindowsKernelOSI* kosi,
-                               struct WindowsProcessOSI* process_osi, uint64_t pid);
-bool init_process_osi(struct WindowsKernelOSI* kosi, struct WindowsProcessOSI* process,
-                      uint64_t eprocess);
-void uninit_process_osi(struct WindowsProcessOSI* kosi);
-
 uint64_t process_get_eprocess(const struct WindowsProcess*);
 const char* process_get_shortname(const struct WindowsProcess*);
 const char* process_get_cmdline(const struct WindowsProcess*);
