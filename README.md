@@ -67,6 +67,8 @@ Pull Requests are welcome.
 :pushpin: Support pointers to pointers in offset  
 :pushpin: Offset should have something like a sizeof() function to better support arrays  
 :pushpin: Load offsets from disk, rather than having a large dictionary which needs to be compiled   
-:pushpin: Find a place to host memory snapshots for wintrospection tests  
+:pushpin: develop ELF parsing tools, similar to mem_pe  
+:pushpin: add testing for linux introspection  
+:pushpin: Find a place to host memory snapshots for windows introspection tests  
 :pushpin: Include tools and documentation for generating new profiles  
 :pushpin: Run cpp-check over the code before every commit  
