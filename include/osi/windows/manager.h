@@ -1,3 +1,6 @@
+#ifndef __LIBINTRO_WINDOWS_MANAGER_H
+#define __LIBINTRO_WINDOWS_MANAGER_H
+
 #include <memory>
 #include <string>
 
@@ -65,3 +68,5 @@ public:
 
     osi::i_t get_type(vm_addr_t address, std::string type);
 };
+
+#endif
