@@ -629,8 +629,11 @@ struct WindowsHandleObject* resolve_handle(struct WindowsKernelOSI* kosi, uint64
     struct WindowsHandleObject* h =
         (struct WindowsHandleObject*)std::calloc(1, sizeof(struct WindowsHandleObject));
 
-    h->posi = std::unique_ptr<WindowsProcessManager>();
-    h->posi->initialize(kosi, kosi_get_current_process_address(kosi));
+    h->posi = std::make_unique<WindowsProcessManager>();
+    if (!(h->posi->initialize(kosi, kosi_get_current_process_address(kosi)))) {
+        free_handle(h);
+        return nullptr;
+    }
 
     auto posi = h->posi->get_process_object();
     osi::i_t obj_header =
