@@ -165,18 +165,23 @@ struct WindowsProcess* create_process(struct WindowsKernelOSI* kosi,
     auto tlib = kosi->kernel_tlib;
     osi::i_t eproc(vmem, tlib, eprocess_address, "_EPROCESS");
 
-    eproc["ImageFileName"].getx(p->shortname, 16);
-
-    sanitize_process_name(p->shortname, 16);
-    // const char shortname[16];
-    p->pid = eproc["UniqueProcessId"].getu();
-    p->ppid = eproc["InheritedFromUniqueProcessId"].getu();
-    p->asid = eproc["Pcb"]["DirectoryTableBase"].getu();
-    p->createtime = eproc["CreateTime"].get64();
-    if (vmem->get_pointer_width() == 4) {
-        p->is_wow64 = false;
-    } else {
-        p->is_wow64 = (eproc["Wow64Process"].getu() != 0);
+    try {
+        eproc["ImageFileName"].getx(p->shortname, 16);
+        sanitize_process_name(p->shortname, 16);
+        // const char shortname[16];
+        p->pid = eproc["UniqueProcessId"].getu();
+        p->ppid = eproc["InheritedFromUniqueProcessId"].getu();
+        p->asid = eproc["Pcb"]["DirectoryTableBase"].getu();
+        p->createtime = eproc["CreateTime"].get64();
+        if (vmem->get_pointer_width() == 4) {
+            p->is_wow64 = false;
+        } else {
+            p->is_wow64 = (eproc["Wow64Process"].getu() != 0);
+        }
+    } catch (std::runtime_error) {
+        // no point if we can't get basic info
+        free_process(p);
+        return nullptr;
     }
 
     // use correct ASID when reading from PEB
