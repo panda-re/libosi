@@ -92,6 +92,7 @@ void free_handle(struct WindowsHandleObject* handle);
 
 uint64_t handle_get_pointer(struct WindowsHandleObject* handle);
 uint8_t handle_get_type(struct WindowsHandleObject* handle);
+const char* handle_get_typename(struct WindowsHandleObject* handle);
 struct WindowsProcessOSI* handle_get_context(struct WindowsHandleObject* handle);
 
 #endif

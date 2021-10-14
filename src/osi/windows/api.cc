@@ -65,6 +65,7 @@ struct WindowsModuleEntry {
 struct WindowsHandleObject {
     uint8_t type_index;
     uint64_t pointer;
+    char* type_name;
     std::unique_ptr<WindowsProcessManager> posi;
 };
 
@@ -661,6 +662,8 @@ struct WindowsHandleObject* resolve_handle(struct WindowsKernelOSI* kosi, uint64
     try {
         h->type_index = obj_header["TypeIndex"].get8();
         h->pointer = obj_header["Body"].get_address();
+        h->type_name =
+            translate_enum(kosi->kernel_tlib, "ObTypeIndexTable", h->type_index);
     } catch (std::runtime_error) {
         free_handle(h);
         return nullptr;
@@ -675,6 +678,11 @@ uint64_t handle_get_pointer(struct WindowsHandleObject* handle)
 
 uint8_t handle_get_type(struct WindowsHandleObject* handle) { return handle->type_index; }
 
+const char* handle_get_typename(struct WindowsHandleObject* handle)
+{
+    return handle->type_name;
+}
+
 struct WindowsProcessOSI* handle_get_context(struct WindowsHandleObject* handle)
 {
     return handle->posi->get_process_object();
@@ -683,6 +691,7 @@ struct WindowsProcessOSI* handle_get_context(struct WindowsHandleObject* handle)
 void free_handle(struct WindowsHandleObject* handle)
 {
     if (handle) {
+        std::free(handle->type_name);
         std::free(handle);
     }
 }

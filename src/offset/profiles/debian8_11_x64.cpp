@@ -8078,6 +8078,8 @@ static std::map<std::string, unsigned int> TRANSLATE = {
     {"edd_info", edd_info},
 };
 
+static std::map<std::string, std::map<long, std::string>> ENUM = {};
+
 uint64_t translate_type(const char* tname)
 {
     const std::string tname_str(tname);
@@ -8114,6 +8116,20 @@ uint64_t type_of_member(uint64_t tid, const char* mname)
         return search->second.second;
     }
     return INVALID_OFFSET;
+}
+
+std::string translate_enum(const char* ename, long idx)
+{
+    auto search = ENUM.find(std::string(ename));
+
+    if (search != ENUM.end()) {
+        auto name = search->second.find(idx);
+        if (name != search->second.end()) {
+            return name->second;
+        }
+    }
+
+    return "unknown";
 }
 
 } // namespace debian8_11_x64

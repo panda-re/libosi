@@ -22,6 +22,9 @@ struct MemberResult* offset_of(struct StructureTypeLibrary* tlib,
                                const struct StructureType* type, const char* member);
 void free_member_result(struct MemberResult* mr);
 
+char* translate_enum(struct StructureTypeLibrary* tlib, const char* ename,
+                           long idx);
+
 const struct StructureType* translate(struct StructureTypeLibrary* tlib,
                                       const char* tname);
 const struct StructureType* dereference_st(struct StructureTypeLibrary* tlib,
