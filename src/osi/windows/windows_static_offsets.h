@@ -45,6 +45,7 @@ typedef union EXHANDLE_PARTIAL {
 } EXHANDLE_PARTIAL;
 } // namespace amd64
 
+static const vm_addr_t KDBG_PSLOADEDMODULELIST = 0x48;
 static const vm_addr_t KDBG_PSACTIVEPROCESSHEAD = 0x50;
 
 } // namespace static_offsets

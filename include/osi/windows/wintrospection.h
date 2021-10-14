@@ -11,6 +11,7 @@ struct WindowsKernelDetails {
     uint64_t kpcr;
     uint64_t kernelbase;
     uint64_t PsActiveProcessHead;
+    uint64_t PsLoadedModuleList;
     uint64_t kdbg;
     uint64_t version64;
     uint64_t system_asid;
@@ -73,6 +74,7 @@ struct WindowsModuleEntry* module_list_next(struct WindowsModuleList*);
 struct WindowsProcessOSI* module_list_get_osi(struct WindowsModuleList* mlist);
 void free_module_list(struct WindowsModuleList* mlist);
 
+uint64_t module_entry_get_module_entry(struct WindowsModuleEntry*);
 uint64_t module_entry_get_base_address(struct WindowsModuleEntry*);
 uint32_t module_entry_get_checksum(struct WindowsModuleEntry*);
 uint64_t module_entry_get_entrypoint(struct WindowsModuleEntry*);

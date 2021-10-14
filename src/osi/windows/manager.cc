@@ -56,6 +56,9 @@ bool WindowsKernelManager::initialize(struct PhysicalMemory* interface,
 
     m_kosi->details.PsActiveProcessHead =
         get_address_active_process_head(m_kosi->system_vmem.get(), m_kosi->details.kdbg);
+    m_kosi->details.PsLoadedModuleList =
+        get_address_loaded_module_head(m_kosi->system_vmem.get(), m_kosi->details.kdbg);
+
     if (!scan_for_version64(m_kosi->system_vmem.get(), m_kosi->details.kdbg,
                             m_kosi->details.kernelbase, &(m_kosi->details.version64))) {
         fprintf(stderr, "Warning: Could not scan for version64\n");

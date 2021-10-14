@@ -178,3 +178,13 @@ vm_addr_t get_address_active_process_head(VirtualMemory* vmem, vm_addr_t kdbg)
     vmem->read_pointer(psactiveprocesshead, &first_entry);
     return first_entry;
 }
+
+vm_addr_t get_address_loaded_module_head(VirtualMemory* vmem, vm_addr_t kdbg)
+{
+    vm_addr_t dbgkd_modlist = kdbg + static_offsets::KDBG_PSLOADEDMODULELIST;
+    vm_addr_t psloadedmodulelist = 0;
+    vmem->read_pointer(dbgkd_modlist, &psloadedmodulelist);
+    vm_addr_t first_entry = 0;
+    vmem->read_pointer(psloadedmodulelist, &first_entry);
+    return first_entry;
+}

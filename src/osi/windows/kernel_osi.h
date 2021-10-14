@@ -22,5 +22,6 @@ bool scan_for_kdbg(VirtualMemory* vmem, vm_addr_t kernel_base, vm_addr_t* kdbg);
 bool scan_for_version64(VirtualMemory* vmem, vm_addr_t kdbg, vm_addr_t kernel_base,
                         vm_addr_t* version64);
 vm_addr_t get_address_active_process_head(VirtualMemory* vmem, vm_addr_t kdbg);
+vm_addr_t get_address_loaded_module_head(VirtualMemory* vmem, vm_addr_t kdbg);
 
 #endif // __OSI_KERNEL

@@ -493,6 +493,10 @@ struct WindowsModuleEntry* create_module_entry(struct WindowsModuleList* mlist,
         mentry->timedatestamp = data_table_entry["TimeDateStamp"].get32();
         mentry->loadcount = data_table_entry["LoadCount"].get16();
 
+        osi::ustring dllname(data_table_entry["BaseDllName"]);
+        std::string dllname_utf8 = maybe_parse_unicode_string(dllname);
+        strncpy(mentry->dllname, dllname_utf8.c_str(), MAX_PATH_SIZE - 1);
+
         osi::ustring dllpath(data_table_entry["FullDllName"]);
         std::string dllpath_utf8 = maybe_parse_unicode_string(dllpath);
         strncpy(mentry->dllpath, dllpath_utf8.c_str(), MAX_PATH_SIZE - 1);
@@ -542,6 +546,11 @@ void free_module_list(struct WindowsModuleList* mlist)
         delete mlist->modules;
         std::free(mlist);
     }
+}
+
+uint64_t module_entry_get_module_entry(struct WindowsModuleEntry* me)
+{
+    return me->module_entry;
 }
 
 uint64_t module_entry_get_base_address(struct WindowsModuleEntry* me)
