@@ -8,6 +8,8 @@
 #include <stdint.h>
 
 // WINDOWS
+#include "profiles/win_xpsp2_x86.h"
+#include "profiles/win_xpsp3_x86.h"
 #include "profiles/win7_sp0_x64.h"
 #include "profiles/win7_sp0_x86.h"
 #include "profiles/win7_sp1_x64.h"
