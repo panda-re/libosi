@@ -18,12 +18,12 @@ struct MemberResult {
 struct StructureTypeLibrary;
 
 struct StructureTypeLibrary* load_type_library(const char* profile);
+const char* get_type_library_profile(const StructureTypeLibrary* tlib);
 struct MemberResult* offset_of(struct StructureTypeLibrary* tlib,
                                const struct StructureType* type, const char* member);
 void free_member_result(struct MemberResult* mr);
 
-char* translate_enum(struct StructureTypeLibrary* tlib, const char* ename,
-                           long idx);
+char* translate_enum(struct StructureTypeLibrary* tlib, const char* ename, long idx);
 
 const struct StructureType* translate(struct StructureTypeLibrary* tlib,
                                       const char* tname);

@@ -659,15 +659,29 @@ struct WindowsHandleObject* resolve_handle(struct WindowsKernelOSI* kosi, uint64
         return nullptr;
     }
 
+    const char* profile = get_type_library_profile(kosi->kernel_tlib);
+
     try {
-        h->type_index = obj_header["TypeIndex"].get8();
         h->pointer = obj_header["Body"].get_address();
-        h->type_name =
-            translate_enum(kosi->kernel_tlib, "ObTypeIndexTable", h->type_index);
+        if (strncmp(profile, "windows-32-xp", 13) == 0) {
+            // Windows XP
+            auto type = obj_header("Type");
+            auto name = osi::ustring(type["Name"]);
+            std::string name_str = maybe_parse_unicode_string(name);
+
+            h->type_index = type["Index"].get8();
+            h->type_name = strdup(name_str.c_str());
+        } else {
+            // Windows 7 (+)
+            h->type_index = obj_header["TypeIndex"].get8();
+            h->type_name =
+                translate_enum(kosi->kernel_tlib, "ObTypeIndexTable", h->type_index);
+        }
     } catch (std::runtime_error) {
         free_handle(h);
         return nullptr;
     }
+
     return h;
 }
 
