@@ -95,7 +95,7 @@ bool WindowsProcessManager::initialize(struct WindowsKernelOSI* kosi, uint64_t e
                                        uint64_t pid)
 {
     if (eprocess == 0 && pid == 0) {
-        fprintf(stderr, "Must provdied either the address or the pid of the process");
+        fprintf(stderr, "Must provdied either the address or the pid of the process\n");
         return false;
     }
 

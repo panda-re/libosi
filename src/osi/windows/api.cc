@@ -600,11 +600,18 @@ static osi::i_t kosi_get_current_process_object(struct WindowsKernelOSI* kosi)
     osi::i_t kpcr =
         osi::i_t(kosi->system_vmem, kosi->kernel_tlib, kosi->details.kpcr, "_KPCR");
 
-    // if (is_32bit() || is_winxp()) {
     osi::i_t eprocess;
     if (kosi->system_vmem->get_pointer_width() == 4) {
-        auto ethread = kpcr["PrcbData"]("CurrentThread");
-        eprocess = ethread.set_type("_KTHREAD")("Process").set_type("_EPROCESS");
+        const char* profile = get_type_library_profile(kosi->kernel_tlib);
+
+        auto thread = kpcr["PrcbData"]("CurrentThread");
+        if (strncmp(profile, "windows-32-xp", 13) == 0) {
+            // Windows XP
+            eprocess = thread.set_type("_ETHREAD")("ThreadsProcess").set_type("_EPROCESS");
+        } else {
+            // Windows 7+
+            eprocess = thread("Process").set_type("_EPROCESS");
+        }
     } else {
         auto ethread = kpcr["Prcb"]("CurrentThread").set_type("_ETHREAD");
         eprocess = ethread.set_type("_KTHREAD")("Process").set_type("_EPROCESS");
