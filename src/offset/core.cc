@@ -12,6 +12,8 @@
 #include "profiles/win7_sp0_x86.h"
 #include "profiles/win7_sp1_x64.h"
 #include "profiles/win7_sp1_x86.h"
+#include "profiles/win_xpsp2_x86.h"
+#include "profiles/win_xpsp3_x86.h"
 
 // LINUX
 #include "profiles/debian8_11_x64.h"
@@ -35,12 +37,18 @@ struct StructureType {
 const struct StructureType* add_tid_to_map(struct StructureTypeLibrary*, uint64_t);
 
 struct StructureTypeLibrary {
+    std::string profile;
     TranslateTypeFunc translate;
     OffsetOfMemberFunc offset_of;
     TypeOfMemberFunc type_of;
     TranslateEnum translate_enum;
     std::map<uint64_t, const struct StructureType*> tid_map;
 };
+
+const char* get_type_library_profile(const StructureTypeLibrary* tlib)
+{
+    return tlib->profile.c_str();
+}
 
 const struct StructureType* add_tid_to_map(struct StructureTypeLibrary* tlib,
                                            uint64_t tid)
@@ -63,6 +71,7 @@ struct StructureTypeLibrary* load_type_library(const char* profile)
     }
 
     auto stm = new StructureTypeLibrary();
+    stm->profile = std::string(profile);
 
     // WINDOWS
     if (strncmp(profile, "win", (size_t)3) == 0) {
@@ -86,6 +95,16 @@ struct StructureTypeLibrary* load_type_library(const char* profile)
             stm->offset_of = windows_7sp1_x64::offset_of_member;
             stm->type_of = windows_7sp1_x64::type_of_member;
             stm->translate_enum = windows_7sp1_x64::translate_enum;
+        } else if (strcmp(profile, "windows-32-xpsp2") == 0) {
+            stm->translate = windows_xpsp2_x86::translate_type;
+            stm->offset_of = windows_xpsp2_x86::offset_of_member;
+            stm->type_of = windows_xpsp2_x86::type_of_member;
+            stm->translate_enum = windows_xpsp2_x86::translate_enum;
+        } else if (strcmp(profile, "windows-32-xpsp3") == 0) {
+            stm->translate = windows_xpsp3_x86::translate_type;
+            stm->offset_of = windows_xpsp3_x86::offset_of_member;
+            stm->type_of = windows_xpsp3_x86::type_of_member;
+            stm->translate_enum = windows_xpsp3_x86::translate_enum;
         } else {
             delete stm;
             return nullptr;

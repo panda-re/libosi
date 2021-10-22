@@ -10,16 +10,16 @@ namespace i386_translator
 
 #define HW_PTE_MASK 0xfffff000
 
-static inline pm_addr_t get_page_directory_index(vm_addr_t vaddr) // index * sizeof(QUAD)
+static inline pm_addr_t get_page_directory_index(vm_addr_t vaddr)
 {
-    uint64_t pdimask = 0xFFC00000;
-    return ((vaddr & pdimask) >> 22);
+    uint64_t mask = 0x3FF;
+    return (vaddr >> 22) & mask;
 }
 
-static inline pm_addr_t get_page_table_index(vm_addr_t vaddr) // index * sizeof(QUAD)
+static inline pm_addr_t get_page_table_index(vm_addr_t vaddr)
 {
-    uint64_t ptimask = 0x3FF000;
-    return ((vaddr & ptimask) >> 12);
+    uint64_t mask = 0x3FF;
+    return ((vaddr >> 12) & mask);
 }
 
 static inline pm_addr_t get_byte_offset(vm_addr_t vaddr) // index * sizeof(QUAD)
@@ -47,7 +47,6 @@ static inline bool is_large_page(pm_addr_t entry) { return ((entry & (1 << 7)) >
 static inline pm_addr_t get_pde(struct PhysicalMemory* pmem, vm_addr_t addr,
                                 pm_addr_t pdt_base_addr)
 {
-    pdt_base_addr = (pdt_base_addr & HW_PTE_MASK);
     size_t size_of_pde = 4;
     auto pde_index = get_page_directory_index(addr);
     auto pde_addr = pdt_base_addr + (pde_index * size_of_pde);
@@ -85,7 +84,7 @@ TranslateStatus translate_address(struct PhysicalMemory* pm, vm_addr_t vm_addr,
 
     // Handle large pages
     if (is_large_page(pde)) {
-        *pm_addr = (pde & HW_PTE_MASK) + get_byte_offset(vm_addr);
+        *pm_addr = ((pde & 0xffc00000) | (vm_addr & ~0xffc00000));
         return TSTAT_SUCCESS;
     }
 
@@ -96,7 +95,7 @@ TranslateStatus translate_address(struct PhysicalMemory* pm, vm_addr_t vm_addr,
     }
 
     // Read the physical page offset from the PT
-    *pm_addr = (pte & HW_PTE_MASK) + get_byte_offset(vm_addr);
+    *pm_addr = ((pte >> 12) << 12) | get_byte_offset(vm_addr);
     return TSTAT_SUCCESS;
 }
 } // namespace i386_translator

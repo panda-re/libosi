@@ -40,6 +40,8 @@ target_include_directories(iohal-static PUBLIC
     $<INSTALL_INTERFACE:include>)
 
 set(OFFSET_SRCS src/offset/core.cc
+            src/offset/profiles/win_xpsp2_x86.h src/offset/profiles/win_xpsp2_x86.cpp
+            src/offset/profiles/win_xpsp3_x86.h src/offset/profiles/win_xpsp3_x86.cpp
             src/offset/profiles/win7_sp0_x86.h src/offset/profiles/win7_sp0_x86.cpp
             src/offset/profiles/win7_sp1_x86.h src/offset/profiles/win7_sp1_x86.cpp
             src/offset/profiles/win7_sp0_x64.h src/offset/profiles/win7_sp0_x64.cpp

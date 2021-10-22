@@ -84,14 +84,17 @@ struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi)
 {
     auto plist = new struct WindowsProcessList;
 
-    plist->head = kosi->details.PsActiveProcessHead;
-    plist->head -= ((kosi->details.pointer_width == 8)
-                        ? static_offsets::amd64::ACTIVEPROCESSLINK_OFFSET
-                        : static_offsets::i386::ACTIVEPROCESSLINK_OFFSET);
+    auto activeprocesslinks =
+        offset_of(kosi->kernel_tlib, translate(kosi->kernel_tlib, "_EPROCESS"),
+                  "ActiveProcessLinks");
+
+    plist->head = kosi->details.PsActiveProcessHead - activeprocesslinks->offset;
     plist->head = get_next_process_link(kosi, plist->head);
 
     plist->ptr = 0;
     plist->kosi = kosi;
+
+    free_member_result(activeprocesslinks);
     return plist;
 }
 
@@ -600,11 +603,19 @@ static osi::i_t kosi_get_current_process_object(struct WindowsKernelOSI* kosi)
     osi::i_t kpcr =
         osi::i_t(kosi->system_vmem, kosi->kernel_tlib, kosi->details.kpcr, "_KPCR");
 
-    // if (is_32bit() || is_winxp()) {
     osi::i_t eprocess;
     if (kosi->system_vmem->get_pointer_width() == 4) {
-        auto ethread = kpcr["PrcbData"]("CurrentThread");
-        eprocess = ethread.set_type("_KTHREAD")("Process").set_type("_EPROCESS");
+        const char* profile = get_type_library_profile(kosi->kernel_tlib);
+
+        auto thread = kpcr["PrcbData"]("CurrentThread");
+        if (strncmp(profile, "windows-32-xp", 13) == 0) {
+            // Windows XP
+            eprocess =
+                thread.set_type("_ETHREAD")("ThreadsProcess").set_type("_EPROCESS");
+        } else {
+            // Windows 7+
+            eprocess = thread("Process").set_type("_EPROCESS");
+        }
     } else {
         auto ethread = kpcr["Prcb"]("CurrentThread").set_type("_ETHREAD");
         eprocess = ethread.set_type("_KTHREAD")("Process").set_type("_EPROCESS");
@@ -659,15 +670,29 @@ struct WindowsHandleObject* resolve_handle(struct WindowsKernelOSI* kosi, uint64
         return nullptr;
     }
 
+    const char* profile = get_type_library_profile(kosi->kernel_tlib);
+
     try {
-        h->type_index = obj_header["TypeIndex"].get8();
         h->pointer = obj_header["Body"].get_address();
-        h->type_name =
-            translate_enum(kosi->kernel_tlib, "ObTypeIndexTable", h->type_index);
+        if (strncmp(profile, "windows-32-xp", 13) == 0) {
+            // Windows XP
+            auto type = obj_header("Type");
+            auto name = osi::ustring(type["Name"]);
+            std::string name_str = maybe_parse_unicode_string(name);
+
+            h->type_index = type["Index"].get8();
+            h->type_name = strdup(name_str.c_str());
+        } else {
+            // Windows 7 (+)
+            h->type_index = obj_header["TypeIndex"].get8();
+            h->type_name =
+                translate_enum(kosi->kernel_tlib, "ObTypeIndexTable", h->type_index);
+        }
     } catch (std::runtime_error) {
         free_handle(h);
         return nullptr;
     }
+
     return h;
 }
 

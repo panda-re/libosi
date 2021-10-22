@@ -68,8 +68,7 @@ bool WindowsKernelManager::initialize(struct PhysicalMemory* interface,
     auto plist = get_process_list(m_kosi.get());
     if (plist) {
         struct WindowsProcess* p = nullptr;
-        do {
-            auto p = process_list_next(plist);
+        while ((p = process_list_next(plist)) != nullptr) {
             if (process_get_pid(p) == 4) {
                 m_kosi->details.system_eprocess = process_get_eprocess(p);
                 m_kosi->system_vmem->set_asid(process_get_asid(p));
@@ -78,8 +77,12 @@ bool WindowsKernelManager::initialize(struct PhysicalMemory* interface,
                 break;
             }
             free_process(p);
-        } while (plist != nullptr);
+        }
         free_process_list(plist);
+    }
+
+    if (!found_system_process) {
+        fprintf(stderr, "Failed to find system process in process list\n");
     }
 
     m_initialized = found_system_process;
@@ -95,7 +98,7 @@ bool WindowsProcessManager::initialize(struct WindowsKernelOSI* kosi, uint64_t e
                                        uint64_t pid)
 {
     if (eprocess == 0 && pid == 0) {
-        fprintf(stderr, "Must provdied either the address or the pid of the process");
+        fprintf(stderr, "Must provdied either the address or the pid of the process\n");
         return false;
     }
 

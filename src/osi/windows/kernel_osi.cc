@@ -135,9 +135,11 @@ bool scan_for_kdbg(VirtualMemory* vmem, vm_addr_t kernel_base, vm_addr_t* kdbg)
             fprintf(stderr, "Non-zero kdbg hint didn't work: %lx\n", *kdbg);
         }
     }
-    while (scanner < scanner + 0x1000000) {
+
+    vm_addr_t maxoffset = scanner + 0x1000000;
+    while (scanner < maxoffset) {
         uint32_t data = 0;
-        vmem->read(scanner, &data, 4);
+        auto status = vmem->read(scanner, &data, 4);
         if (data == 0x4742444b) {
             *kdbg = scanner - offset;
             return true;
