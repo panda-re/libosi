@@ -84,14 +84,17 @@ struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi)
 {
     auto plist = new struct WindowsProcessList;
 
-    plist->head = kosi->details.PsActiveProcessHead;
-    plist->head -= ((kosi->details.pointer_width == 8)
-                        ? static_offsets::amd64::ACTIVEPROCESSLINK_OFFSET
-                        : static_offsets::i386::ACTIVEPROCESSLINK_OFFSET);
+    auto activeprocesslinks =
+        offset_of(kosi->kernel_tlib, translate(kosi->kernel_tlib, "_EPROCESS"),
+                  "ActiveProcessLinks");
+
+    plist->head = kosi->details.PsActiveProcessHead - activeprocesslinks->offset;
     plist->head = get_next_process_link(kosi, plist->head);
 
     plist->ptr = 0;
     plist->kosi = kosi;
+
+    free_member_result(activeprocesslinks);
     return plist;
 }
 
@@ -607,7 +610,8 @@ static osi::i_t kosi_get_current_process_object(struct WindowsKernelOSI* kosi)
         auto thread = kpcr["PrcbData"]("CurrentThread");
         if (strncmp(profile, "windows-32-xp", 13) == 0) {
             // Windows XP
-            eprocess = thread.set_type("_ETHREAD")("ThreadsProcess").set_type("_EPROCESS");
+            eprocess =
+                thread.set_type("_ETHREAD")("ThreadsProcess").set_type("_EPROCESS");
         } else {
             // Windows 7+
             eprocess = thread("Process").set_type("_EPROCESS");

@@ -30,6 +30,7 @@ public:
             offset_of(obj.get_type_library(), obj.get_type(), m.c_str());
 
         tid_offset = mem->offset;
+        free_member_result(mem);
     }
 
     i_t& get() { return object; }
@@ -93,6 +94,7 @@ public:
             offset_of(obj.get_type_library(), obj.get_type(), m.c_str());
 
         tid_offset = mem->offset;
+        free_member_result(mem);
     }
 
     i_t& get() { return object; }
