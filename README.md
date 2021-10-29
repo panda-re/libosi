@@ -1,4 +1,4 @@
-<h1 align="center">:construction: Libosi :construction:</h1>
+<h1 align="center">Libosi</h1>
 
 Operating System Introspection library to support PANDA.
 
@@ -34,7 +34,7 @@ sudo dpkg -i libosi-[version].deb
 ### Testing
 
 Testing is currently implemented for offset and iohal. To run the tests, you will 
-first need to install `libgtest-dev` and enable testing:
+first need to install dependencies and enable testing:
 
 ```bash
 sudo apt-get install libgtest-dev
@@ -52,23 +52,28 @@ Currently, the code is formatted with clang-format, using the style provided in 
 
 ### Development
 
-This library currently supports Windows XP, Windows 7 and Debian 8.11 (linux kernel v3.16).
-Support for similar Windows and Linux kernels is as simple as adding a new profile to `src/offset/profiles`.
-However, in some kernels, struct names may have changed. In these cases, you may need to add/port
-API functions in `src/osi/windows/api.cc`, where these names are assumed.
+This library currently supports the following Windows profiles (circles represent level of support claimed):
+
+:red_circle: windows-32-2000  
+:yellow_circle: windows-32-xpsp3  
+:yellow_circle: windows-32-xpsp2  
+:green_circle: windows7-32-7sp0  
+:green_circle: windows7-64-7sp0  
+:green_circle: windows7-32-7sp1  
+:green_circle: windows7-64-7sp1  
+
+Additionally, the following Linux profiles are supported:
+
+:green_circle: debian-32-8.11  
+:green_circle: debian-64-8.11  
+
+Adding support for other Windows and Linux kernels can be as simple as adding a new profile 
+to `src/offset/profiles`. However, in some kernels, struct names may have changed. In these 
+cases, you may need to add/port API functions in `src/osi/windows/api.cc`, where these names 
+are assumed. Additionally, Linux support is for a rather old kernel version (v3.16). Supporting
+a newer kernel would likely be some development work.
 
 Support is currently limited to i386 and amd64. Support for more architectures includes writing
 a new translator within `src/iohal/translators`.
 
 Pull Requests are welcome.
-
-#### To-Do
-
-:pushpin: Support pointers to pointers in offset  
-:pushpin: Offset should have something like a sizeof() function to better support arrays  
-:pushpin: Load offsets from disk, rather than having a large dictionary which needs to be compiled   
-:pushpin: develop ELF parsing tools, similar to mem_pe  
-:pushpin: add testing for linux introspection  
-:pushpin: Find a place to host memory snapshots for windows introspection tests  
-:pushpin: Include tools and documentation for generating new profiles  
-:pushpin: Run cpp-check over the code before every commit  
