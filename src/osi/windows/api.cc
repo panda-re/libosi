@@ -670,7 +670,7 @@ struct WindowsHandleObject* resolve_handle(struct WindowsKernelOSI* kosi, uint64
     const char* profile = get_type_library_profile(kosi->kernel_tlib);
     if (strncmp(profile, "windows-32-2000", 15) == 0) {
         win2k = true;
-    } else if (strncmp(profile, "windows-32-xp") == 0) {
+    } else if (strncmp(profile, "windows-32-xp", 13) == 0) {
         winxp = true;
     }
 

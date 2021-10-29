@@ -15,6 +15,24 @@ namespace windows_2000_x86
 
 enum Type : unsigned int {
     UNKNOWN,
+    _LIST_ENTRY,
+    _UNICODE_STRING,
+    _DISPATCHER_HEADER,
+    _PEB_LDR_DATA,
+    _LDR_DATA_TABLE_ENTRY,
+    _CURDIR,
+    _RTL_USER_PROCESS_PARAMETERS,
+    _FILE_OBJECT,
+    _OBJECT_TYPE,
+    _OBJECT_HEADER,
+    _HANDLE_TABLE,
+    _CLIENT_ID,
+    _ETHREAD,
+    _KPRCB,
+    _KPCR,
+    _PEB,
+    _KPROCESS,
+    _EPROCESS
 };
 
 static std::map<std::string, std::pair<int, unsigned int>> OFFSET[] = {
@@ -71,7 +89,7 @@ static std::map<std::string, std::pair<int, unsigned int>> OFFSET[] = {
     {
         // _FILE_OBJECT
         {"FileName", {0x30, _UNICODE_STRING}},
-        {"CurrentByteOffset", {0x38, _LARGE_INTEGER}},
+        {"CurrentByteOffset", {0x38, UNKNOWN}},
     },
     {
         // _OBJECT_TYPE
