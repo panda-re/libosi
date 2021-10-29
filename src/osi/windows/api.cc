@@ -315,6 +315,7 @@ uint64_t get_eproc_addr_from_asid(struct WindowsKernelOSI* kosi, uint64_t asid)
     free_process_list(plist);
     return 0;
 }
+
 void free_process(struct WindowsProcess* p)
 {
     if (p) {
@@ -608,8 +609,9 @@ static osi::i_t kosi_get_current_process_object(struct WindowsKernelOSI* kosi)
         const char* profile = get_type_library_profile(kosi->kernel_tlib);
 
         auto thread = kpcr["PrcbData"]("CurrentThread");
-        if (strncmp(profile, "windows-32-xp", 13) == 0) {
-            // Windows XP
+        if (strncmp(profile, "windows-32-xp", 13) == 0 ||
+            strncmp(profile, "windows-32-2000", 15) == 0) {
+            // Windows 2k & XP
             eprocess =
                 thread.set_type("_ETHREAD")("ThreadsProcess").set_type("_EPROCESS");
         } else {
@@ -660,22 +662,34 @@ struct WindowsHandleObject* resolve_handle(struct WindowsKernelOSI* kosi, uint64
         free_handle(h);
         return nullptr;
     }
-
     auto posi = h->posi->get_process_object();
-    osi::i_t obj_header =
-        resolve_handle_table_entry(posi, handle, kosi->details.pointer_width > 4);
+
+    bool win2k = false;
+    bool winxp = false;
+
+    const char* profile = get_type_library_profile(kosi->kernel_tlib);
+    if (strncmp(profile, "windows-32-2000", 15) == 0) {
+        win2k = true;
+    } else if (strncmp(profile, "windows-32-xp") == 0) {
+        winxp = true;
+    }
+
+    osi::i_t obj_header;
+    if (win2k) {
+        obj_header = resolve_handle_table_entry_win2000(posi, handle);
+    } else {
+        obj_header =
+            resolve_handle_table_entry(posi, handle, kosi->details.pointer_width > 4);
+    }
 
     if (!obj_header.get_address()) {
         free_handle(h);
         return nullptr;
     }
 
-    const char* profile = get_type_library_profile(kosi->kernel_tlib);
-
     try {
         h->pointer = obj_header["Body"].get_address();
-        if (strncmp(profile, "windows-32-xp", 13) == 0) {
-            // Windows XP
+        if (win2k || winxp) {
             auto type = obj_header("Type");
             auto name = osi::ustring(type["Name"]);
             std::string name_str = maybe_parse_unicode_string(name);
@@ -808,6 +822,13 @@ TranslateStatus process_vmem_read(struct WindowsProcessOSI* process_osi, vm_addr
     }
 
     if (status != TSTAT_PAGED_OUT) {
+        return status;
+    }
+
+    // This logic has only been figured for Windows 7
+    const char* profile = get_type_library_profile(process_osi->tlib);
+    if (strncmp(profile, "windows-32-7", 12) != 0 &&
+        strncmp(profile, "windows-64-7", 12) != 0) {
         return status;
     }
 
