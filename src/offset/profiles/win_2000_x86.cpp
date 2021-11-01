@@ -157,7 +157,27 @@ static std::map<std::string, std::pair<int, unsigned int>> OFFSET[] = {
     },
 };
 
-std::map<std::string, unsigned int> TRANSLATE = {};
+std::map<std::string, unsigned int> TRANSLATE = {
+    {"UNKNOWN", 0},
+    {"_LIST_ENTRY", _LIST_ENTRY},
+    {"_UNICODE_STRING", _UNICODE_STRING},
+    {"_DISPATCHER_HEADER", _DISPATCHER_HEADER},
+    {"_PEB_LDR_DATA", _PEB_LDR_DATA},
+    {"_LDR_DATA_TABLE_ENTRY", _LDR_DATA_TABLE_ENTRY},
+    {"_CURDIR", _CURDIR},
+    {"_RTL_USER_PROCESS_PARAMETERS", _RTL_USER_PROCESS_PARAMETERS},
+    {"_FILE_OBJECT", _FILE_OBJECT},
+    {"_OBJECT_TYPE", _OBJECT_TYPE},
+    {"_OBJECT_HEADER", _OBJECT_HEADER},
+    {"_HANDLE_TABLE", _HANDLE_TABLE},
+    {"_CLIENT_ID", _CLIENT_ID},
+    {"_ETHREAD", _ETHREAD},
+    {"_KPRCB", _KPRCB},
+    {"_KPCR", _KPCR},
+    {"_PEB", _PEB},
+    {"_KPROCESS", _KPROCESS},
+    {"_EPROCESS", _EPROCESS}
+};
 
 static std::map<std::string, std::map<long, std::string>> ENUM = {{}};
 
