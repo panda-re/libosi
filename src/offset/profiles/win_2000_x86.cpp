@@ -124,7 +124,7 @@ static std::map<std::string, std::pair<int, unsigned int>> OFFSET[] = {
         {"IdleThread", {0xc, _ETHREAD | POINTER}},
     },
     {
-        // _KPCR - fixed @ 0xFFDFF000
+        // _KPCR
         {"SelfPcr", {0x1c, _KPCR | POINTER}},
         {"Prcb", {0x20, _KPRCB | POINTER}},
         {"PrcbData", {0x120, _KPRCB}},
