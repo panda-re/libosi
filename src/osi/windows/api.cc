@@ -80,7 +80,7 @@ std::string maybe_parse_unicode_string(osi::ustring& ustr)
     }
 }
 
-struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi)
+struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi, bool skip_head)
 {
     auto plist = new struct WindowsProcessList;
 
@@ -89,7 +89,10 @@ struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi)
                   "ActiveProcessLinks");
 
     plist->head = kosi->details.PsActiveProcessHead - activeprocesslinks->offset;
-    plist->head = get_next_process_link(kosi, plist->head);
+
+    if (skip_head) {
+        plist->head = get_next_process_link(kosi, plist->head);
+    }
 
     plist->ptr = 0;
     plist->kosi = kosi;
@@ -98,6 +101,7 @@ struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi)
     return plist;
 }
 
+const static uint64_t FAILING_ITERATION = 0xffffffffffffffff;
 uint64_t get_next_process_link(struct WindowsKernelOSI* kosi, uint64_t start_address)
 {
     auto vmem = kosi->system_vmem;
@@ -116,7 +120,10 @@ uint64_t get_next_process_link(struct WindowsKernelOSI* kosi, uint64_t start_add
 
             auto peb = next_process("Peb"); // try this to see if valid process (if
                                             // invalid, will return peb address = 0)
-            if (peb.get_address() == 0 && next_process["UniqueProcessId"].getu() != 4) {
+
+            uint64_t address = next_process.get_address();
+
+            if (peb.get_address() == 0 && address != kosi->details.system_eprocess) {
                 continue;
             }
 
@@ -125,13 +132,15 @@ uint64_t get_next_process_link(struct WindowsKernelOSI* kosi, uint64_t start_add
             continue;
         }
     }
-    return 0;
+    return FAILING_ITERATION;
 }
 
 struct WindowsProcess* process_list_next(struct WindowsProcessList* plist)
 {
     try {
         if (plist->ptr == plist->head) {
+            return nullptr;
+        } else if (plist->ptr == FAILING_ITERATION) {
             return nullptr;
         } else if (plist->ptr == 0) {
             plist->ptr = plist->head;

@@ -176,8 +176,7 @@ std::map<std::string, unsigned int> TRANSLATE = {
     {"_KPCR", _KPCR},
     {"_PEB", _PEB},
     {"_KPROCESS", _KPROCESS},
-    {"_EPROCESS", _EPROCESS}
-};
+    {"_EPROCESS", _EPROCESS}};
 
 static std::map<std::string, std::map<long, std::string>> ENUM = {{}};
 

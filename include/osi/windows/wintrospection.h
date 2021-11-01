@@ -44,7 +44,8 @@ uint64_t kosi_get_current_process_address(struct WindowsKernelOSI* kosi);
 struct WindowsProcess* kosi_get_current_process(struct WindowsKernelOSI* kosi);
 uint64_t kosi_get_current_tid(struct WindowsKernelOSI* kosi);
 
-struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi);
+struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi,
+                                            bool skip_head = true);
 struct WindowsProcess* process_list_next(struct WindowsProcessList* plist);
 struct WindowsProcess* create_process(struct WindowsKernelOSI* kosi,
                                       uint64_t eprocess_address);

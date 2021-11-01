@@ -72,7 +72,7 @@ bool WindowsKernelManager::initialize(struct PhysicalMemory* interface,
     }
 
     bool found_system_process = false;
-    auto plist = get_process_list(m_kosi.get());
+    auto plist = get_process_list(m_kosi.get(), (system_pid != 8));
     if (plist) {
         struct WindowsProcess* p = nullptr;
         while ((p = process_list_next(plist)) != nullptr) {
