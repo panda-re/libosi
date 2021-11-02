@@ -104,6 +104,7 @@ static std::map<std::string, std::pair<int, unsigned int>> OFFSET[] = {
     {
         // _HANDLE_TABLE
         {"TableCode", {0x0, UNKNOWN}},
+        {"Layer1", {0x8, UNKNOWN}},
     },
     {
         // _CLIENT_ID
