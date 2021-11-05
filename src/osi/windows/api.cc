@@ -118,13 +118,18 @@ uint64_t get_next_process_link(struct WindowsKernelOSI* kosi, uint64_t start_add
                 continue;
             }
 
-            auto peb = next_process("Peb"); // try this to see if valid process (if
-                                            // invalid, will return peb address = 0)
+            auto peb = next_process("Peb");
 
-            uint64_t address = next_process.get_address();
+            if (kosi->details.system_eprocess != 0) {
+                // we know which process is the system process, so we can do a proper
+                // check if this is a valid process. all processes except System should
+                // have a valid _PEB pointer. The only time system_eprocess should be
+                // zero is during initialization.
+                uint64_t address = next_process.get_address();
 
-            if (peb.get_address() == 0 && address != kosi->details.system_eprocess) {
-                continue;
+                if (peb.get_address() == 0 && address != kosi->details.system_eprocess) {
+                    continue;
+                }
             }
 
             return next_process.get_address();
