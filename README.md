@@ -2,6 +2,28 @@
 
 Operating System Introspection library to support PANDA.
 
+Currently, the following profiles are supported:
+
+Key:  
+:red_circle: Experimental support  
+:yellow_circle: Supports api with some issues  
+:green_circle: Full support  
+
+Windows profiles:
+
+:red_circle: windows-32-2000  
+:green_circle: windows-32-xpsp3  
+:green_circle: windows-32-xpsp2  
+:green_circle: windows7-32-7sp0  
+:green_circle: windows7-64-7sp0  
+:green_circle: windows7-32-7sp1  
+:green_circle: windows7-64-7sp1  
+
+Linux profiles:
+
+:green_circle: debian-32-8.11  
+:green_circle: debian-64-8.11  
+
 ### Prerequisites
 
 Install dependencies. On Ubuntu, this can be done with:
@@ -46,26 +68,7 @@ ninja
 
 You can then run the tests with just `ninja test`.
 
-### Style
-
-Currently, the code is formatted with clang-format, using the style provided in `.clang-format`.
-
-### Development
-
-This library currently supports the following Windows profiles (circles represent level of support claimed):
-
-:red_circle: windows-32-2000  
-:yellow_circle: windows-32-xpsp3  
-:yellow_circle: windows-32-xpsp2  
-:green_circle: windows7-32-7sp0  
-:green_circle: windows7-64-7sp0  
-:green_circle: windows7-32-7sp1  
-:green_circle: windows7-64-7sp1  
-
-Additionally, the following Linux profiles are supported:
-
-:green_circle: debian-32-8.11  
-:green_circle: debian-64-8.11  
+### Development 
 
 Adding support for other Windows and Linux kernels can be as simple as adding a new profile 
 to `src/offset/profiles`. However, in some kernels, struct names may have changed. In these 
@@ -77,3 +80,7 @@ Support is currently limited to i386 and amd64. Support for more architectures i
 a new translator within `src/iohal/translators`.
 
 Pull Requests are welcome.
+
+### Style
+
+Currently, the code is formatted with clang-format, using the style provided in `.clang-format`.
