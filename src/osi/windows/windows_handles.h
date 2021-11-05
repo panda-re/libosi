@@ -6,5 +6,6 @@
 
 osi::i_t resolve_handle_table_entry(struct WindowsProcessOSI* posi, uint64_t handle,
                                     bool x64);
-
+osi::i_t resolve_handle_table_entry_win2000(struct WindowsProcessOSI* posi,
+                                            uint32_t handle);
 #endif

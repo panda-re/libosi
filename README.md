@@ -1,6 +1,28 @@
-<h1 align="center">:construction: Libosi :construction:</h1>
+<h1 align="center">Libosi</h1>
 
 Operating System Introspection library to support PANDA.
+
+Currently, the following profiles are supported:
+
+Key:  
+:red_circle: Experimental support  
+:yellow_circle: Supports api with some issues  
+:green_circle: Full support  
+
+Windows profiles:
+
+:red_circle: windows-32-2000  
+:green_circle: windows-32-xpsp3  
+:green_circle: windows-32-xpsp2  
+:green_circle: windows7-32-7sp0  
+:green_circle: windows7-64-7sp0  
+:green_circle: windows7-32-7sp1  
+:green_circle: windows7-64-7sp1  
+
+Linux profiles:
+
+:green_circle: debian-32-8.11  
+:green_circle: debian-64-8.11  
 
 ### Prerequisites
 
@@ -34,7 +56,7 @@ sudo dpkg -i libosi-[version].deb
 ### Testing
 
 Testing is currently implemented for offset and iohal. To run the tests, you will 
-first need to install `libgtest-dev` and enable testing:
+first need to install dependencies and enable testing:
 
 ```bash
 sudo apt-get install libgtest-dev
@@ -46,29 +68,19 @@ ninja
 
 You can then run the tests with just `ninja test`.
 
-### Style
+### Development 
 
-Currently, the code is formatted with clang-format, using the style provided in `.clang-format`.
-
-### Development
-
-This library currently supports Windows XP, Windows 7 and Debian 8.11 (linux kernel v3.16).
-Support for similar Windows and Linux kernels is as simple as adding a new profile to `src/offset/profiles`.
-However, in some kernels, struct names may have changed. In these cases, you may need to add/port
-API functions in `src/osi/windows/api.cc`, where these names are assumed.
+Adding support for other Windows and Linux kernels can be as simple as adding a new profile 
+to `src/offset/profiles`. However, in some kernels, struct names may have changed. In these 
+cases, you may need to add/port API functions in `src/osi/windows/api.cc`, where these names 
+are assumed. Additionally, Linux support is for a rather old kernel version (v3.16). Supporting
+a newer kernel would likely be some development work.
 
 Support is currently limited to i386 and amd64. Support for more architectures includes writing
 a new translator within `src/iohal/translators`.
 
 Pull Requests are welcome.
 
-#### To-Do
+### Style
 
-:pushpin: Support pointers to pointers in offset  
-:pushpin: Offset should have something like a sizeof() function to better support arrays  
-:pushpin: Load offsets from disk, rather than having a large dictionary which needs to be compiled   
-:pushpin: develop ELF parsing tools, similar to mem_pe  
-:pushpin: add testing for linux introspection  
-:pushpin: Find a place to host memory snapshots for windows introspection tests  
-:pushpin: Include tools and documentation for generating new profiles  
-:pushpin: Run cpp-check over the code before every commit  
+Currently, the code is formatted with clang-format, using the style provided in `.clang-format`.

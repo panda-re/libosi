@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "osi/windows/manager.h"
 #include "osi/windows/wintrospection.h"
 
@@ -64,12 +66,17 @@ bool WindowsKernelManager::initialize(struct PhysicalMemory* interface,
         fprintf(stderr, "Warning: Could not scan for version64\n");
     }
 
+    uint64_t system_pid = 4;
+    if (strcmp(profile, "windows-32-2000") == 0) {
+        system_pid = 8;
+    }
+
     bool found_system_process = false;
-    auto plist = get_process_list(m_kosi.get());
+    auto plist = get_process_list(m_kosi.get(), (system_pid != 8));
     if (plist) {
         struct WindowsProcess* p = nullptr;
         while ((p = process_list_next(plist)) != nullptr) {
-            if (process_get_pid(p) == 4) {
+            if (process_get_pid(p) == system_pid) {
                 m_kosi->details.system_eprocess = process_get_eprocess(p);
                 m_kosi->system_vmem->set_asid(process_get_asid(p));
                 m_kosi->details.system_asid = process_get_asid(p);

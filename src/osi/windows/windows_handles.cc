@@ -1,4 +1,7 @@
+#include <string.h>
+
 #include <offset/i_t.h>
+#include <offset/offset.h>
 
 #include "osi/windows/wintrospection.h"
 #include "windows_handles.h"
@@ -80,5 +83,26 @@ osi::i_t resolve_handle_table_entry(struct WindowsProcessOSI* posi, uint64_t han
     }
 
     uint64_t header = obj.set_address(entry).getu() & TABLE_MASK;
+    return obj.set_address(header).set_type("_OBJECT_HEADER");
+}
+
+osi::i_t resolve_handle_table_entry_win2000(struct WindowsProcessOSI* posi,
+                                            uint32_t handle)
+{
+    osi::i_t obj(posi->vmem, posi->tlib, posi->eprocess_address, "_EPROCESS");
+
+    auto table = obj("ObjectTable");
+    uint32_t table_base = table["Layer1"].get32();
+
+    // TODO: verify that all entries are actually level 3? This was added
+    // as panda-re/panda does this for windows 2k
+
+    uint64_t entry = resolve_base_x86(handle, 2, table_base);
+    uint64_t header = obj.set_address(entry).getu();
+
+    // The lock flag must be set to get a valid ptr
+    header |= 0x80000000;
+    header &= TABLE_MASK;
+
     return obj.set_address(header).set_type("_OBJECT_HEADER");
 }

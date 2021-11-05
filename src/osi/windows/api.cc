@@ -80,7 +80,7 @@ std::string maybe_parse_unicode_string(osi::ustring& ustr)
     }
 }
 
-struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi)
+struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi, bool skip_head)
 {
     auto plist = new struct WindowsProcessList;
 
@@ -89,7 +89,10 @@ struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi)
                   "ActiveProcessLinks");
 
     plist->head = kosi->details.PsActiveProcessHead - activeprocesslinks->offset;
-    plist->head = get_next_process_link(kosi, plist->head);
+
+    if (skip_head) {
+        plist->head = get_next_process_link(kosi, plist->head);
+    }
 
     plist->ptr = 0;
     plist->kosi = kosi;
@@ -98,6 +101,7 @@ struct WindowsProcessList* get_process_list(struct WindowsKernelOSI* kosi)
     return plist;
 }
 
+const static uint64_t FAILING_ITERATION = 0xffffffffffffffff;
 uint64_t get_next_process_link(struct WindowsKernelOSI* kosi, uint64_t start_address)
 {
     auto vmem = kosi->system_vmem;
@@ -114,10 +118,18 @@ uint64_t get_next_process_link(struct WindowsKernelOSI* kosi, uint64_t start_add
                 continue;
             }
 
-            auto peb = next_process("Peb"); // try this to see if valid process (if
-                                            // invalid, will return peb address = 0)
-            if (peb.get_address() == 0 && next_process["UniqueProcessId"].getu() != 4) {
-                continue;
+            auto peb = next_process("Peb");
+
+            if (kosi->details.system_eprocess != 0) {
+                // we know which process is the system process, so we can do a proper
+                // check if this is a valid process. all processes except System should
+                // have a valid _PEB pointer. The only time system_eprocess should be
+                // zero is during initialization.
+                uint64_t address = next_process.get_address();
+
+                if (peb.get_address() == 0 && address != kosi->details.system_eprocess) {
+                    continue;
+                }
             }
 
             return next_process.get_address();
@@ -125,13 +137,15 @@ uint64_t get_next_process_link(struct WindowsKernelOSI* kosi, uint64_t start_add
             continue;
         }
     }
-    return 0;
+    return FAILING_ITERATION;
 }
 
 struct WindowsProcess* process_list_next(struct WindowsProcessList* plist)
 {
     try {
         if (plist->ptr == plist->head) {
+            return nullptr;
+        } else if (plist->ptr == FAILING_ITERATION) {
             return nullptr;
         } else if (plist->ptr == 0) {
             plist->ptr = plist->head;
@@ -315,6 +329,7 @@ uint64_t get_eproc_addr_from_asid(struct WindowsKernelOSI* kosi, uint64_t asid)
     free_process_list(plist);
     return 0;
 }
+
 void free_process(struct WindowsProcess* p)
 {
     if (p) {
@@ -608,8 +623,9 @@ static osi::i_t kosi_get_current_process_object(struct WindowsKernelOSI* kosi)
         const char* profile = get_type_library_profile(kosi->kernel_tlib);
 
         auto thread = kpcr["PrcbData"]("CurrentThread");
-        if (strncmp(profile, "windows-32-xp", 13) == 0) {
-            // Windows XP
+        if (strncmp(profile, "windows-32-xp", 13) == 0 ||
+            strncmp(profile, "windows-32-2000", 15) == 0) {
+            // Windows 2k & XP
             eprocess =
                 thread.set_type("_ETHREAD")("ThreadsProcess").set_type("_EPROCESS");
         } else {
@@ -660,22 +676,34 @@ struct WindowsHandleObject* resolve_handle(struct WindowsKernelOSI* kosi, uint64
         free_handle(h);
         return nullptr;
     }
-
     auto posi = h->posi->get_process_object();
-    osi::i_t obj_header =
-        resolve_handle_table_entry(posi, handle, kosi->details.pointer_width > 4);
+
+    bool win2k = false;
+    bool winxp = false;
+
+    const char* profile = get_type_library_profile(kosi->kernel_tlib);
+    if (strncmp(profile, "windows-32-2000", 15) == 0) {
+        win2k = true;
+    } else if (strncmp(profile, "windows-32-xp", 13) == 0) {
+        winxp = true;
+    }
+
+    osi::i_t obj_header;
+    if (win2k) {
+        obj_header = resolve_handle_table_entry_win2000(posi, handle);
+    } else {
+        obj_header =
+            resolve_handle_table_entry(posi, handle, kosi->details.pointer_width > 4);
+    }
 
     if (!obj_header.get_address()) {
         free_handle(h);
         return nullptr;
     }
 
-    const char* profile = get_type_library_profile(kosi->kernel_tlib);
-
     try {
         h->pointer = obj_header["Body"].get_address();
-        if (strncmp(profile, "windows-32-xp", 13) == 0) {
-            // Windows XP
+        if (win2k || winxp) {
             auto type = obj_header("Type");
             auto name = osi::ustring(type["Name"]);
             std::string name_str = maybe_parse_unicode_string(name);
@@ -808,6 +836,13 @@ TranslateStatus process_vmem_read(struct WindowsProcessOSI* process_osi, vm_addr
     }
 
     if (status != TSTAT_PAGED_OUT) {
+        return status;
+    }
+
+    // This logic has only been figured for Windows 7
+    const char* profile = get_type_library_profile(process_osi->tlib);
+    if (strncmp(profile, "windows-32-7", 12) != 0 &&
+        strncmp(profile, "windows-64-7", 12) != 0) {
         return status;
     }
 
