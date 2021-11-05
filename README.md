@@ -14,10 +14,10 @@ Windows profiles:
 :red_circle: windows-32-2000  
 :green_circle: windows-32-xpsp3  
 :green_circle: windows-32-xpsp2  
-:green_circle: windows7-32-7sp0  
-:green_circle: windows7-64-7sp0  
-:green_circle: windows7-32-7sp1  
-:green_circle: windows7-64-7sp1  
+:green_circle: windows-32-7sp0   
+:green_circle: windows-64-7sp0   
+:green_circle: windows-32-7sp1   
+:green_circle: windows-64-7sp1   
 
 Linux profiles:
 
