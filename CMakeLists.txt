@@ -1,4 +1,5 @@
-project(wintrospection)
+project(libosi)
+
 cmake_minimum_required(VERSION 3.0.2)
 
 set(CMAKE_CXX_STANDARD 14)
@@ -16,9 +17,9 @@ set(CMAKE_INSTALL_RPATH "$ORIGIN/../lib")
 
 set(IOHAL_SRCS src/iohal/memory/pmem_snapshot.cc
     src/iohal/translators/virtual_memory_translators.cc
-    src/iohal/translators/windows_amd64.h src/iohal/translators/windows_amd64.cc
-    src/iohal/translators/windows_i386.h  src/iohal/translators/windows_i386.cc
-    src/iohal/translators/windows_i386_pae.h  src/iohal/translators/windows_i386_pae.cc
+    src/iohal/translators/vm_amd64.h src/iohal/translators/vm_amd64.cc
+    src/iohal/translators/vm_i386.h  src/iohal/translators/vm_i386.cc
+    src/iohal/translators/vm_i386_pae.h  src/iohal/translators/vm_i386_pae.cc
     src/iohal/memory/virtual_memory.cc)
 
 # Compile all the .o files once
@@ -38,19 +39,19 @@ target_include_directories(iohal-static PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
 
-
-set(OSI_SRCS src/offset/profiles/win7_sp0_x86.h
-             src/offset/profiles/win7_sp1_x86.h
-             src/offset/profiles/win7_sp1_x86.cpp
-             src/offset/profiles/win7_sp0_x64.cpp
-             src/offset/profiles/win7_sp0_x64.h
-             src/offset/profiles/win7_sp1_x64.cpp
-             src/offset/profiles/win7_sp1_x64.h
-             src/offset/profiles/win7_sp0_x86.cpp
-             src/offset/core.cc)
+set(OFFSET_SRCS src/offset/core.cc
+            src/offset/profiles/win_2000_x86.h src/offset/profiles/win_2000_x86.cpp
+            src/offset/profiles/win_xpsp2_x86.h src/offset/profiles/win_xpsp2_x86.cpp
+            src/offset/profiles/win_xpsp3_x86.h src/offset/profiles/win_xpsp3_x86.cpp
+            src/offset/profiles/win7_sp0_x86.h src/offset/profiles/win7_sp0_x86.cpp
+            src/offset/profiles/win7_sp1_x86.h src/offset/profiles/win7_sp1_x86.cpp
+            src/offset/profiles/win7_sp0_x64.h src/offset/profiles/win7_sp0_x64.cpp
+            src/offset/profiles/win7_sp1_x64.h src/offset/profiles/win7_sp1_x64.cpp
+            src/offset/profiles/debian8_11_x86.h src/offset/profiles/debian8_11_x86.cpp
+            src/offset/profiles/debian8_11_x64.h src/offset/profiles/debian8_11_x64.cpp)
 
 # Compile all the .o files once
-add_library(offset-obj OBJECT ${OSI_SRCS})
+add_library(offset-obj OBJECT ${OFFSET_SRCS})
 target_include_directories(offset-obj PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/offset>
@@ -70,33 +71,35 @@ target_include_directories(offset-static PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/offset>
     $<INSTALL_INTERFACE:include>)
 
-
-set(WINTRO_SRCS src/wintrospection/kernel_osi.cc
-                src/wintrospection/api.cc
-                src/wintrospection/windows_handles.cc
-                src/wintrospection/mem_pe/mem_pe.cc)
+set(OSI_SRCS src/osi/windows/manager.cc
+	        src/osi/windows/kernel_osi.cc
+                src/osi/windows/api.cc
+                src/osi/windows/windows_handles.cc
+                src/osi/windows/mem_pe/mem_pe.cc
+                src/osi/linux/api.cc
+                src/osi/linux/kernel_osi.cc)
 
 # Compile all the .o files once
-add_library(wintrospection-obj OBJECT ${WINTRO_SRCS})
-target_include_directories(wintrospection-obj PRIVATE
+add_library(osi-obj OBJECT ${OSI_SRCS})
+target_include_directories(osi-obj PRIVATE
                            ${CMAKE_CURRENT_SOURCE_DIR}/include)
-set_target_properties(wintrospection-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+set_target_properties(osi-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
 
 # Then package them into a shared library and a static library
-add_library(wintrospection SHARED $<TARGET_OBJECTS:wintrospection-obj>)
-target_include_directories(wintrospection PUBLIC
+add_library(osi SHARED $<TARGET_OBJECTS:osi-obj>)
+target_include_directories(osi PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<INSTALL_INTERFACE:include>)
 
-add_library(wintrospection-static STATIC $<TARGET_OBJECTS:wintrospection-obj>)
-target_include_directories(wintrospection-static PUBLIC
+add_library(osi-static STATIC $<TARGET_OBJECTS:osi-obj>)
+target_include_directories(osi-static PUBLIC
                            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
                            $<INSTALL_INTERFACE:include>)
 
-target_link_libraries(wintrospection ${GLIB_PKG_LIBRARIES})
+target_link_libraries(osi offset ${GLIB_PKG_LIBRARIES})
 
 # Install everything
-install(TARGETS wintrospection wintrospection-static offset offset-static iohal iohal-static
+install(TARGETS osi osi-static offset offset-static iohal iohal-static
         RUNTIME DESTINATION bin
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib)
@@ -112,4 +115,4 @@ if (ENABLE_TESTING)
     add_subdirectory(tests)
 endif()
 
-
+include(CPackConfig.txt)

@@ -32,7 +32,7 @@ TEST(ItAmd64Test, KpcrAmd64)
     auto tlib = load_type_library("windows-64-7sp1");
     ASSERT_TRUE(tlib != nullptr) << "Could not locate requested profile";
 
-    auto vmem = std::make_shared<VirtualMemory>(pmem, 64, 0x1c55a000, false);
+    auto vmem = std::make_shared<VirtualMemory>(pmem, 64, 0x1c55a000, false, "unknown");
 
     vm_addr_t kpcr_address = 0xfffff8000284cd00;
     osi::i_t kpcr = osi::i_t(vmem, tlib, kpcr_address, "_KPCR");

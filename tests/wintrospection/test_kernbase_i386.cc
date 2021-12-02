@@ -1,6 +1,7 @@
 #include "iohal/memory/virtual_memory.h"
 #include "offset/offset.h"
-#include "wintrospection/wintrospection.h"
+#include "osi/windows/manager.h"
+#include "osi/windows/wintrospection.h"
 #include "gtest/gtest.h"
 #include <set>
 #include <unistd.h>
@@ -12,21 +13,16 @@ TEST(WintroKernelbaseTest, Win7SP1i386)
     ASSERT_TRUE(testfile) << "Couldn't load input test file!";
     ASSERT_TRUE(access(testfile, R_OK) == 0) << "Could not read input file";
 
-    struct WindowsKernelDetails kdetails = {0};
-    struct WindowsKernelOSI kosi = {0};
-    kdetails.pointer_width = 4;
-    kdetails.kpcr = 0x82933c00;
-    pm_addr_t asid = 0x185000;
-    bool pae = false;
+    WindowsKernelManager manager = WindowsKernelManager("windows-32-7sp1");
 
-    kosi.pmem = load_physical_memory_snapshot(testfile);
-    kosi.kernel_tlib = load_type_library("windows-32-7sp1");
-    ASSERT_TRUE(kosi.pmem != nullptr) << "failed to load physical memory snapshot";
-    ASSERT_TRUE(kosi.kernel_tlib != nullptr) << "failed to load type library";
+    auto pmem = load_physical_memory_snapshot(testfile);
+    ASSERT_TRUE(pmem != nullptr) << "failed to load physical memory snapshot";
 
-    ASSERT_TRUE(
-        initialize_windows_kernel_osi(&kosi, &kdetails, asid, pae, "windows-32-7sp1"))
+    ASSERT_TRUE(manager.initialize(pmem, 4, 0x185000, 0x82933c00))
         << "Failed to initialize kernel osi";
+
+    struct WindowsKernelOSI* kosi = manager.get_kernel_object();
+    struct WindowsKernelDetails kdetails = kosi->details;
 
     ASSERT_EQ(kdetails.kernelbase, 0x82811000) << "Found the wrong kernel base";
 
@@ -36,8 +32,7 @@ TEST(WintroKernelbaseTest, Win7SP1i386)
 
     // ASSERT_EQ(kdetails.PsActiveProcessHead, 0x8294a6d8);
 
-    kosi.system_vmem.reset();
-    kosi.pmem->free(kosi.pmem);
+    pmem->free(pmem);
 }
 
 int main(int argc, char** argv)

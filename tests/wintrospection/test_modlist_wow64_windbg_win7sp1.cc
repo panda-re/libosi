@@ -1,6 +1,7 @@
 #include "iohal/memory/virtual_memory.h"
 #include "offset/offset.h"
-#include "wintrospection/wintrospection.h"
+#include "osi/windows/manager.h"
+#include "osi/windows/wintrospection.h"
 #include "gtest/gtest.h"
 #include <set>
 #include <unistd.h>
@@ -13,10 +14,8 @@
 #include "rapidjson/document.h"
 #include "rapidjson/filereadstream.h"
 
-char* testfile =
-    "../tests/wintrospection-tests/wow64/snapshots/wow64_windbgwin7sp1.tar.gz";
-char* dlllistfile =
-    "../tests/wintrospection-tests/wow64/dlllist/wow64_windbgwin7sp1_dlllist.json";
+char* testfile = nullptr;
+char* dlllistfile = nullptr;
 
 struct ModuleInfo {
     uint64_t base;
@@ -53,36 +52,15 @@ std::map<uint64_t, std::vector<struct ModuleInfo>> WOW64_EXPECTED_RESULTS = {
       {0x75ff0000, 0x00c4a000, 0x0000ffff, "C:\\Windows\\syswow64\\SHELL32.dll"},
       {0x75a90000, 0x00057000, 0x0000ffff, "C:\\Windows\\syswow64\\SHLWAPI.dll"},
       {0x73f90000, 0x0019e000, 0x0000ffff,
-       "C:\\Windows\\WinSxS\\x86_microsoft.windows.common-controls_6595b64144ccf1df_6.0."
-       "7601.17514_none_41e6975e2bd6f2b2\\COMCTL32.dll"},
+       "C:\\Windows\\WinSxS\\x86_microsoft.windows."
+       "common-controls_6595b64144ccf1df_6.0.7601."
+       "17514_none_41e6975e2bd6f2b2\\COMCTL32.dll"},
       {0x746c0000, 0x00012000, 0x0000ffff, "C:\\Windows\\system32\\MPR.dll"},
       {0x75260000, 0x00060000, 0x00000004, "C:\\Windows\\system32\\IMM32.DLL"},
       {0x75590000, 0x000cc000, 0x00000002, "C:\\Windows\\syswow64\\MSCTF.dll"},
       {0x73e90000, 0x00080000, 0x00000003, "C:\\Windows\\system32\\uxtheme.dll"},
       {0x73da0000, 0x00094000, 0x00000001, "C:\\Windows\\system32\\MSFTEDIT.DLL"},
       {0x73f70000, 0x00013000, 0x00000001, "C:\\Windows\\system32\\dwmapi.dll"}}}};
-
-std::string get_path_to_unzipped_snapshot(std::string compressed_file)
-{
-    DIR* snapshotDir;
-
-    if ((snapshotDir = opendir(TMP_SNAPSHOT_PATH)) != NULL) {
-        std::string command = "rm -rf " + std::string(TMP_SNAPSHOT_PATH);
-        std::system(command.c_str());
-        closedir(snapshotDir);
-    }
-
-    std::string command = "mkdir " + std::string(TMP_SNAPSHOT_PATH) + " && tar -xvzf " +
-                          compressed_file + " -C " + std::string(TMP_SNAPSHOT_PATH);
-    std::system(command.c_str());
-
-    std::size_t found = compressed_file.find_last_of("/");
-    std::string snapshot_name =
-        std::string(TMP_SNAPSHOT_PATH) +
-        compressed_file.substr(found + 1, compressed_file.size() - (found + 1 + 7));
-
-    return snapshot_name;
-}
 
 void initialize_expected_results(
     char* dlllistfile,
@@ -162,14 +140,15 @@ void handle_proces_modlist_wow64(struct WindowsKernelOSI* wintro,
     auto& entry = candidate->second;
     auto& wow64entry = wow64_candidate->second;
     uint32_t module_count = 0;
-    auto modlist = get_module_list(wintro, p, MODULELIST_LOAD_ORDER);
+    auto modlist = get_module_list(wintro, process_get_eprocess(p), process_is_wow64(p));
 
     if (modlist) {
         auto me = module_list_next(modlist);
         while (me) {
-            if (!(find_match(me, entry) || find_match(me, wow64entry)))
+            if (!(find_match(me, entry) || find_match(me, wow64entry))) {
                 fprintf(stderr, "Did not find a match for %lx with dllpath %s\n",
                         module_entry_get_base_address(me), module_entry_get_dllpath(me));
+            }
             module_count++;
             free_module_entry(me);
             me = module_list_next(modlist);
@@ -193,8 +172,9 @@ void handle_proces_modlist(struct WindowsKernelOSI* wintro, struct WindowsProces
     auto candidate = EXPECTED_RESULTS.find(pid);
 
     if (candidate == EXPECTED_RESULTS.end()) {
-        fprintf(stderr, "Can't find pid %u in dlllist\n", pid);
-        auto modlist = get_module_list(wintro, p, MODULELIST_LOAD_ORDER);
+        fprintf(stderr, "Can't find pid %lu in dlllist\n", pid);
+        auto modlist =
+            get_module_list(wintro, process_get_eprocess(p), process_is_wow64(p));
         ASSERT_TRUE(!modlist) << "found modules that don't exist for PID" << pid;
         return;
     }
@@ -202,7 +182,7 @@ void handle_proces_modlist(struct WindowsKernelOSI* wintro, struct WindowsProces
     auto& entry = candidate->second;
 
     uint32_t module_count = 0;
-    auto modlist = get_module_list(wintro, p, MODULELIST_LOAD_ORDER);
+    auto modlist = get_module_list(wintro, process_get_eprocess(p), process_is_wow64(p));
 
     if (modlist) {
         auto me = module_list_next(modlist);
@@ -227,59 +207,51 @@ void handle_proces_modlist(struct WindowsKernelOSI* wintro, struct WindowsProces
 
 TEST(TestWOW64windbgPlist, Win7SP1amd64)
 {
+    ASSERT_TRUE(testfile) << "Couldn't load input test file!";
+    ASSERT_TRUE(access(testfile, R_OK) == 0) << "Could not read input file";
 
-    std::string snapshot = get_path_to_unzipped_snapshot(testfile) + ".raw";
-    ASSERT_TRUE(snapshot.c_str()) << "Couldn't load input test file!";
-    ASSERT_TRUE(access(snapshot.c_str(), R_OK) == 0) << "Could not read input file";
+    WindowsKernelManager manager = WindowsKernelManager("windows-64-7sp1");
 
-    struct WindowsKernelDetails kdetails = {0};
-    struct WindowsKernelOSI kosi = {0};
-    kdetails.pointer_width = 8;
-    kdetails.kpcr = 0xfffff80002c09d00;
-    kdetails.kdbg = 0xf80002c080a0;
-    pm_addr_t asid = 0x187000;
-    bool pae = false;
+    auto pmem = load_physical_memory_snapshot(testfile);
+    ASSERT_TRUE(pmem != nullptr) << "failed to load physical memory snapshot";
+
+    struct WindowsKernelOSI* kosi = manager.get_kernel_object();
+
+    ASSERT_TRUE(manager.initialize(pmem, 8, 0x187000, 0xfffff80002c09d00))
+        << "Failed to initialize kernel osi";
 
     initialize_expected_results(dlllistfile, EXPECTED_RESULTS);
 
-    kosi.pmem = load_physical_memory_snapshot(snapshot.c_str());
-    kosi.kernel_tlib = load_type_library("windows-64-7sp1");
-    ASSERT_TRUE(kosi.pmem != nullptr) << "failed to load physical memory snapshot";
-    ASSERT_TRUE(kosi.kernel_tlib != nullptr) << "failed to load type library";
-    ASSERT_TRUE(
-        initialize_windows_kernel_osi(&kosi, &kdetails, asid, pae, "windows-64-7sp1"))
-        << "Failed to initialize kernel osi";
-
-    auto plist = get_process_list(&kosi);
+    auto plist = get_process_list(kosi);
     ASSERT_TRUE(plist != nullptr) << "Failed to get process list";
     ;
 
-    int numProc = 0;
     auto process = process_list_next(plist);
-    if (process == nullptr)
-        numProc = 1; // represents system with pid = 4
-
-    else {
-        for (process; process != nullptr; process = process_list_next(plist)) {
-            numProc++;
-            if (process_get_pid(process) == 2672)
-                handle_proces_modlist_wow64(&kosi, process);
-            else
-                handle_proces_modlist(&kosi, process);
-            free_process(process);
+    for (; process != nullptr; process = process_list_next(plist)) {
+        if (process_get_pid(process) == 2672) {
+            handle_proces_modlist_wow64(kosi, process);
+        } else {
+            handle_proces_modlist(kosi, process);
         }
+        free_process(process);
     }
 
     ASSERT_TRUE(process_list_next(plist) >= nullptr) << "Found too little processes";
 
     free_process_list(plist);
-
-    kosi.system_vmem.reset();
-    kosi.pmem->free(kosi.pmem);
+    pmem->free(pmem);
 }
 
 int main(int argc, char** argv)
 {
     ::testing::InitGoogleTest(&argc, argv);
+    if (argc != 3) {
+        fprintf(stderr, "usage: %s snapshot groundtruth\n", argv[0]);
+        return 3;
+    }
+
+    testfile = argv[1];
+    dlllistfile = argv[2];
+
     return RUN_ALL_TESTS();
 }

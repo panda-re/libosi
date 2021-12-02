@@ -19,9 +19,10 @@ add_subdirectory(/usr/src/gtest
 
 add_subdirectory(iohal)
 add_subdirectory(offset)
+# add_subdirectory(wintrospection)
 add_executable(winvtop vtop.cc)
-target_include_directories(winvtop PUBLIC $<TARGET_PROPERTY:wintrospection,INTERFACE_INCLUDE_DIRECTORIES>)
-target_link_libraries(winvtop iohal offset wintrospection)
-add_dependencies(winvtop iohal offset wintrospection)
+target_include_directories(winvtop PUBLIC $<TARGET_PROPERTY:osi,INTERFACE_INCLUDE_DIRECTORIES>)
+target_link_libraries(winvtop iohal offset osi)
+add_dependencies(winvtop iohal offset osi)
 
 endif()

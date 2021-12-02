@@ -7,16 +7,25 @@
 #include <map>
 #include <stdint.h>
 
+// WINDOWS
 #include "profiles/win7_sp0_x64.h"
 #include "profiles/win7_sp0_x86.h"
 #include "profiles/win7_sp1_x64.h"
 #include "profiles/win7_sp1_x86.h"
+#include "profiles/win_2000_x86.h"
+#include "profiles/win_xpsp2_x86.h"
+#include "profiles/win_xpsp3_x86.h"
+
+// LINUX
+#include "profiles/debian8_11_x64.h"
+#include "profiles/debian8_11_x86.h"
 
 #define POINTER 0x80000000
 
 typedef uint64_t (*TranslateTypeFunc)(const char*);
 typedef uint64_t (*OffsetOfMemberFunc)(uint64_t tid, const char* mname);
 typedef uint64_t (*TypeOfMemberFunc)(uint64_t tid, const char* mname);
+typedef std::string (*TranslateEnum)(const char* mname, long idx);
 
 struct StructureType {
     uint64_t tid;
@@ -29,11 +38,18 @@ struct StructureType {
 const struct StructureType* add_tid_to_map(struct StructureTypeLibrary*, uint64_t);
 
 struct StructureTypeLibrary {
+    std::string profile;
     TranslateTypeFunc translate;
     OffsetOfMemberFunc offset_of;
     TypeOfMemberFunc type_of;
+    TranslateEnum translate_enum;
     std::map<uint64_t, const struct StructureType*> tid_map;
 };
+
+const char* get_type_library_profile(const StructureTypeLibrary* tlib)
+{
+    return tlib->profile.c_str();
+}
 
 const struct StructureType* add_tid_to_map(struct StructureTypeLibrary* tlib,
                                            uint64_t tid)
@@ -56,23 +72,69 @@ struct StructureTypeLibrary* load_type_library(const char* profile)
     }
 
     auto stm = new StructureTypeLibrary();
-    if (strcmp(profile, "windows-32-7sp0") == 0) {
-        stm->translate = windows_7sp0_x86::translate_type;
-        stm->offset_of = windows_7sp0_x86::offset_of_member;
-        stm->type_of = windows_7sp0_x86::type_of_member;
-    } else if (strcmp(profile, "windows-64-7sp0") == 0) {
-        stm->translate = windows_7sp0_x64::translate_type;
-        stm->offset_of = windows_7sp0_x64::offset_of_member;
-        stm->type_of = windows_7sp0_x64::type_of_member;
-    } else if (strcmp(profile, "windows-32-7sp1") == 0) {
-        stm->translate = windows_7sp1_x86::translate_type;
-        stm->offset_of = windows_7sp1_x86::offset_of_member;
-        stm->type_of = windows_7sp1_x86::type_of_member;
-    } else if (strcmp(profile, "windows-64-7sp1") == 0) {
-        stm->translate = windows_7sp1_x64::translate_type;
-        stm->offset_of = windows_7sp1_x64::offset_of_member;
-        stm->type_of = windows_7sp1_x64::type_of_member;
-    } else {
+    stm->profile = std::string(profile);
+
+    // WINDOWS
+    if (strncmp(profile, "win", (size_t)3) == 0) {
+        if (strcmp(profile, "windows-32-7sp0") == 0) {
+            stm->translate = windows_7sp0_x86::translate_type;
+            stm->offset_of = windows_7sp0_x86::offset_of_member;
+            stm->type_of = windows_7sp0_x86::type_of_member;
+            stm->translate_enum = windows_7sp0_x86::translate_enum;
+        } else if (strcmp(profile, "windows-64-7sp0") == 0) {
+            stm->translate = windows_7sp0_x64::translate_type;
+            stm->offset_of = windows_7sp0_x64::offset_of_member;
+            stm->type_of = windows_7sp0_x64::type_of_member;
+            stm->translate_enum = windows_7sp0_x64::translate_enum;
+        } else if (strcmp(profile, "windows-32-7sp1") == 0) {
+            stm->translate = windows_7sp1_x86::translate_type;
+            stm->offset_of = windows_7sp1_x86::offset_of_member;
+            stm->type_of = windows_7sp1_x86::type_of_member;
+            stm->translate_enum = windows_7sp1_x86::translate_enum;
+        } else if (strcmp(profile, "windows-64-7sp1") == 0) {
+            stm->translate = windows_7sp1_x64::translate_type;
+            stm->offset_of = windows_7sp1_x64::offset_of_member;
+            stm->type_of = windows_7sp1_x64::type_of_member;
+            stm->translate_enum = windows_7sp1_x64::translate_enum;
+        } else if (strcmp(profile, "windows-32-xpsp2") == 0) {
+            stm->translate = windows_xpsp2_x86::translate_type;
+            stm->offset_of = windows_xpsp2_x86::offset_of_member;
+            stm->type_of = windows_xpsp2_x86::type_of_member;
+            stm->translate_enum = windows_xpsp2_x86::translate_enum;
+        } else if (strcmp(profile, "windows-32-xpsp3") == 0) {
+            stm->translate = windows_xpsp3_x86::translate_type;
+            stm->offset_of = windows_xpsp3_x86::offset_of_member;
+            stm->type_of = windows_xpsp3_x86::type_of_member;
+            stm->translate_enum = windows_xpsp3_x86::translate_enum;
+        } else if (strcmp(profile, "windows-32-2000") == 0) {
+            stm->translate = windows_2000_x86::translate_type;
+            stm->offset_of = windows_2000_x86::offset_of_member;
+            stm->type_of = windows_2000_x86::type_of_member;
+            stm->translate_enum = windows_2000_x86::translate_enum;
+        } else {
+            delete stm;
+            return nullptr;
+        }
+    }
+    // DEBIAN
+    else if (strncmp(profile, "deb", (size_t)3) == 0) {
+        if (strcmp(profile, "debian-32-8.11") == 0) {
+            stm->translate = debian8_11_x86::translate_type;
+            stm->offset_of = debian8_11_x86::offset_of_member;
+            stm->type_of = debian8_11_x86::type_of_member;
+            stm->translate_enum = debian8_11_x86::translate_enum;
+        } else if (strcmp(profile, "debian-64-8.11") == 0) {
+            stm->translate = debian8_11_x64::translate_type;
+            stm->offset_of = debian8_11_x64::offset_of_member;
+            stm->type_of = debian8_11_x64::type_of_member;
+            stm->translate_enum = debian8_11_x64::translate_enum;
+        } else {
+            delete stm;
+            return nullptr;
+        }
+    }
+    // NOT VALID
+    else {
         delete stm;
         return nullptr;
     }
@@ -99,6 +161,12 @@ struct MemberResult* offset_of(struct StructureTypeLibrary* tlib,
 }
 
 void free_member_result(struct MemberResult* mr) { std::free(mr); }
+
+char* translate_enum(struct StructureTypeLibrary* tlib, const char* ename, long idx)
+{
+    auto name = tlib->translate_enum(ename, idx);
+    return strdup(name.c_str());
+}
 
 uint64_t get_member_offset(struct StructureTypeLibrary* tlib,
                            const struct MemberResult& mresult)

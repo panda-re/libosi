@@ -10,7 +10,8 @@ class VirtualMemory
 {
 public:
     VirtualMemory(const VirtualMemory& other);
-    VirtualMemory(struct PhysicalMemory* pmem, uint8_t bits, pm_addr_t asid, bool pae);
+    VirtualMemory(struct PhysicalMemory* pmem, uint8_t bits, pm_addr_t asid, bool pae,
+                  const char* profile);
     TranslateStatus read(vm_addr_t addr, void* buffer, uint64_t size);
     TranslateStatus read_pointer(vm_addr_t addr, vm_addr_t* buffer);
 

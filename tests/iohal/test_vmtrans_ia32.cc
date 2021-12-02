@@ -45,7 +45,7 @@ bool init_physical_memory_emptymem(void* opaque)
 TEST(VmTranlatorIa32Test, VTTranslateNormal)
 {
     struct PhysicalMemory* pmem = createSparsePhysicalMemory(TWO_GB);
-    VirtualMemoryTranslator ia32_trans(pmem, 32, 0x2312a000, false);
+    VirtualMemoryTranslator ia32_trans(pmem, 32, 0x2312a000, false, "unknown");
 
     ASSERT_TRUE(init_physical_memory_emptymem(pmem->opaque));
     pm_addr_t pm_addr = 0;
@@ -78,7 +78,7 @@ TEST(VmTranlatorIa32Test, VTTranslateOverrideAsid)
 {
     struct PhysicalMemory* pmem = createSparsePhysicalMemory(TWO_GB);
 
-    VirtualMemoryTranslator ia32_trans(pmem, 32, 0xdeadbeef, false);
+    VirtualMemoryTranslator ia32_trans(pmem, 32, 0xdeadbeef, false, "unknown");
 
     ASSERT_TRUE(init_physical_memory_emptymem(pmem->opaque));
     pm_addr_t pm_addr = 0;
