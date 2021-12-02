@@ -4,25 +4,17 @@ Operating System Introspection library to support PANDA.
 
 Currently, the following profiles are supported:
 
-Key:  
-:red_circle: Experimental support  
-:yellow_circle: Supports api with some issues  
-:green_circle: Full support  
-
-Windows profiles:
-
-:red_circle: windows-32-2000  
-:green_circle: windows-32-xpsp3  
-:green_circle: windows-32-xpsp2  
-:green_circle: windows-32-7sp0   
-:green_circle: windows-64-7sp0   
-:green_circle: windows-32-7sp1   
-:green_circle: windows-64-7sp1   
-
-Linux profiles:
-
-:green_circle: debian-32-8.11  
-:green_circle: debian-64-8.11  
+| Profile            | Level of Support |
+| ------------------ | ---------------- |
+| windows-32-7sp0    | full             |
+| windows-32-7sp1    | full             |
+| windows-64-7sp0    | full             |
+| windows-64-7sp1    | full             |
+| windows-32-xpsp2   | full             |
+| windows-32-xpsp3   | full             |
+| windows-32-2000    | **experimental** |
+| debian-32-8.11     | full             |
+| debian-64-8.11     | full             |
 
 ### Prerequisites
 
