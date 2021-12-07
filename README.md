@@ -13,8 +13,8 @@ Currently, the following profiles are supported:
 | windows-32-xpsp2   | full             |
 | windows-32-xpsp3   | full             |
 | windows-32-2000    | **experimental** |
-| debian-32-8.11     | full             |
-| debian-64-8.11     | full             |
+| linux-32-3.16      | full             |
+| linux-64-3.16      | full             |
 
 ### Prerequisites
 

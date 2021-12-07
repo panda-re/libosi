@@ -6,7 +6,7 @@
         * added qstr->size after looking at linux kernel code
 */
 
-#include "debian8_11_x64.h"
+#include "linux3_16_x64.h"
 #include "offset/offset.h"
 #include <map>
 #include <string>
@@ -15,7 +15,7 @@
 
 #define POINTER 0x80000000
 
-namespace debian8_11_x64
+namespace linux3_16_x64
 {
 
 enum Type : unsigned int {
@@ -8132,4 +8132,4 @@ std::string translate_enum(const char* ename, long idx)
     return "unknown";
 }
 
-} // namespace debian8_11_x64
+} // namespace linux3_16_x64
