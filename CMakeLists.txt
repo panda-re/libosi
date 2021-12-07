@@ -47,8 +47,8 @@ set(OFFSET_SRCS src/offset/core.cc
             src/offset/profiles/win7_sp1_x86.h src/offset/profiles/win7_sp1_x86.cpp
             src/offset/profiles/win7_sp0_x64.h src/offset/profiles/win7_sp0_x64.cpp
             src/offset/profiles/win7_sp1_x64.h src/offset/profiles/win7_sp1_x64.cpp
-            src/offset/profiles/debian8_11_x86.h src/offset/profiles/debian8_11_x86.cpp
-            src/offset/profiles/debian8_11_x64.h src/offset/profiles/debian8_11_x64.cpp)
+            src/offset/profiles/linux3_16_x86.h src/offset/profiles/linux3_16_x86.cpp
+            src/offset/profiles/linux3_16_x64.h src/offset/profiles/linux3_16_x64.cpp)
 
 # Compile all the .o files once
 add_library(offset-obj OBJECT ${OFFSET_SRCS})

@@ -17,8 +17,8 @@
 #include "profiles/win_xpsp3_x86.h"
 
 // LINUX
-#include "profiles/debian8_11_x64.h"
-#include "profiles/debian8_11_x86.h"
+#include "profiles/linux3_16_x64.h"
+#include "profiles/linux3_16_x86.h"
 
 #define POINTER 0x80000000
 
@@ -116,18 +116,18 @@ struct StructureTypeLibrary* load_type_library(const char* profile)
             return nullptr;
         }
     }
-    // DEBIAN
-    else if (strncmp(profile, "deb", (size_t)3) == 0) {
-        if (strcmp(profile, "debian-32-8.11") == 0) {
-            stm->translate = debian8_11_x86::translate_type;
-            stm->offset_of = debian8_11_x86::offset_of_member;
-            stm->type_of = debian8_11_x86::type_of_member;
-            stm->translate_enum = debian8_11_x86::translate_enum;
-        } else if (strcmp(profile, "debian-64-8.11") == 0) {
-            stm->translate = debian8_11_x64::translate_type;
-            stm->offset_of = debian8_11_x64::offset_of_member;
-            stm->type_of = debian8_11_x64::type_of_member;
-            stm->translate_enum = debian8_11_x64::translate_enum;
+    // Linux 3.16
+    else if (strncmp(profile, "linux", (size_t)5) == 0) {
+        if (strcmp(profile, "linux-32-3.16") == 0) {
+            stm->translate = linux3_16_x86::translate_type;
+            stm->offset_of = linux3_16_x86::offset_of_member;
+            stm->type_of = linux3_16_x86::type_of_member;
+            stm->translate_enum = linux3_16_x86::translate_enum;
+        } else if (strcmp(profile, "linux-64-3.16") == 0) {
+            stm->translate = linux3_16_x64::translate_type;
+            stm->offset_of = linux3_16_x64::offset_of_member;
+            stm->type_of = linux3_16_x64::type_of_member;
+            stm->translate_enum = linux3_16_x64::translate_enum;
         } else {
             delete stm;
             return nullptr;
