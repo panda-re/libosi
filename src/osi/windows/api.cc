@@ -176,7 +176,7 @@ static void sanitize_process_name(char* process_name, size_t nbytes)
 struct WindowsProcess* create_process(struct WindowsKernelOSI* kosi,
                                       uint64_t eprocess_address)
 {
-    auto p = new WindowsProcess;
+    auto p = new WindowsProcess();
 
     p->eprocess_address = eprocess_address;
     auto vmem = std::make_shared<VirtualMemory>(*kosi->system_vmem);
@@ -333,10 +333,10 @@ uint64_t get_eproc_addr_from_asid(struct WindowsKernelOSI* kosi, uint64_t asid)
 void free_process(struct WindowsProcess* p)
 {
     if (p) {
-        delete p;
         if (p->cmdline) {
             delete p->cmdline;
         }
+        delete p;
     }
 }
 
