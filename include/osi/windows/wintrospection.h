@@ -16,6 +16,7 @@ struct WindowsKernelDetails {
     uint64_t version64;
     uint64_t system_asid;
     uint64_t system_eprocess;
+    uint64_t swapcontext_offset;
 };
 
 struct WindowsKernelOSI {

@@ -37,6 +37,8 @@ public:
     struct WindowsKernelOSI* get_kernel_object() { return m_kosi.get(); }
 
     osi::i_t get_type(vm_addr_t address, std::string type);
+
+    uint64_t get_swapcontext_offset() { return m_kosi->details.swapcontext_offset; }
 };
 
 class WindowsProcessManager

@@ -69,6 +69,13 @@ bool WindowsKernelManager::initialize(struct PhysicalMemory* interface,
     uint64_t system_pid = 4;
     if (strcmp(profile, "windows-32-2000") == 0) {
         system_pid = 8;
+        m_kosi->details.swapcontext_offset = 0x43e3;
+    } else if (strcmp(profile, "windows-32-xpsp3") == 0) {
+        m_kosi->details.swapcontext_offset = 0x49d7;
+    } else if (strcmp(profile, "windows-32-7sp1") == 0) {
+        m_kosi->details.swapcontext_offset = 0x55209;
+    } else {
+        m_kosi->details.swapcontext_offset = 0x0;
     }
 
     bool found_system_process = false;
