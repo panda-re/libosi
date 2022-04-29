@@ -6,6 +6,8 @@ Currently, the following profiles are supported:
 
 | Profile            | Level of Support |
 | ------------------ | ---------------- |
+| windows-32-10v1809 | **development**  |
+| windows-64-10v1809 | **development**  |
 | windows-32-7sp0    | full             |
 | windows-32-7sp1    | full             |
 | windows-64-7sp0    | full             |

@@ -8,6 +8,8 @@
 #include <stdint.h>
 
 // WINDOWS
+#include "profiles/win10_1809_x64.h"
+#include "profiles/win10_1809_x86.h"
 #include "profiles/win7_sp0_x64.h"
 #include "profiles/win7_sp0_x86.h"
 #include "profiles/win7_sp1_x64.h"
@@ -76,6 +78,17 @@ struct StructureTypeLibrary* load_type_library(const char* profile)
 
     // WINDOWS
     if (strncmp(profile, "win", (size_t)3) == 0) {
+        if (strcmp(profile, "windows-32-10v1809") == 0) {
+            stm->translate = windows_10v1809_x86::translate_type;
+            stm->offset_of = windows_10v1809_x86::offset_of_member;
+            stm->type_of = windows_10v1809_x86::type_of_member;
+            stm->translate_enum = windows_10v1809_x86::translate_enum;
+        } else if (strcmp(profile, "windows-64-10v1809") == 0) {
+            stm->translate = windows_10v1809_x64::translate_type;
+            stm->offset_of = windows_10v1809_x64::offset_of_member;
+            stm->type_of = windows_10v1809_x64::type_of_member;
+            stm->translate_enum = windows_10v1809_x64::translate_enum;
+        } 
         if (strcmp(profile, "windows-32-7sp0") == 0) {
             stm->translate = windows_7sp0_x86::translate_type;
             stm->offset_of = windows_7sp0_x86::offset_of_member;
