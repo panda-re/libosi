@@ -88,7 +88,7 @@ struct StructureTypeLibrary* load_type_library(const char* profile)
             stm->offset_of = windows_10v1809_x64::offset_of_member;
             stm->type_of = windows_10v1809_x64::type_of_member;
             stm->translate_enum = windows_10v1809_x64::translate_enum;
-        } 
+        }
         if (strcmp(profile, "windows-32-7sp0") == 0) {
             stm->translate = windows_7sp0_x86::translate_type;
             stm->offset_of = windows_7sp0_x86::offset_of_member;

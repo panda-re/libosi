@@ -14,7 +14,8 @@
 // the resolve functions in this file are based off of ReactOS
 // https://doxygen.reactos.org/d0/d72/ex_8h.html#a1fa10d89ce5eb73bd55ed2cd2001d38a
 
-uint64_t resolve_base_x64(struct WindowsProcessOSI *posi, uint64_t value, uint32_t level, uint64_t base)
+uint64_t resolve_base_x64(struct WindowsProcessOSI* posi, uint64_t value, uint32_t level,
+                          uint64_t base)
 {
     static_offsets::amd64::EXHANDLE_PARTIAL handle_obj;
     handle_obj.handle = value;
@@ -42,7 +43,8 @@ uint64_t resolve_base_x64(struct WindowsProcessOSI *posi, uint64_t value, uint32
     return base;
 }
 
-uint32_t resolve_base_x86(struct WindowsProcessOSI *posi, uint32_t value, uint32_t level, uint32_t base)
+uint32_t resolve_base_x86(struct WindowsProcessOSI* posi, uint32_t value, uint32_t level,
+                          uint32_t base)
 {
     static_offsets::i386::EXHANDLE_PARTIAL handle_obj;
     handle_obj.handle = value;
