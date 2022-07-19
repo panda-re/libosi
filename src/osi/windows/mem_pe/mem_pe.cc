@@ -1,5 +1,8 @@
+#include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <stdint.h>
+#include <string>
 
 #include "offset/windows_common.h"
 #include "osi/windows/pe.h"
