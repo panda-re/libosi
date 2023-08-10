@@ -4,11 +4,15 @@
 #include <ctype.h>
 #include <dlfcn.h>
 #include <exception>
+#include <functional>
 #include <libgen.h>
 #include <map>
 #include <memory>
+#include <set>
 #include <stdint.h>
 #include <vector>
+
+#include "glib.h"
 
 #include "iohal/memory/virtual_memory.h"
 #include <offset/i_t.h>
@@ -21,6 +25,13 @@
 
 #include "windows_handles.h"
 #include "windows_static_offsets.h"
+
+// Thrown when PEB cannot be loaded
+class NoPebException : public std::exception
+{
+public:
+    const char* what() const throw() { return "Could not read PEB"; }
+};
 
 struct WindowsProcessList {
     uint64_t head;
@@ -42,8 +53,7 @@ struct WindowsProcess {
 
 struct WindowsModuleList {
     std::unique_ptr<WindowsProcessManager> posi;
-    std::vector<uint64_t>* module_list;
-    std::map<uint64_t, bool>* modules;
+    std::vector<std::pair<uint64_t, bool>>* module_list;
     uint16_t idx;
 };
 
@@ -69,7 +79,34 @@ struct WindowsHandleObject {
     std::unique_ptr<WindowsProcessManager> posi;
 };
 
+struct GetModuleByAddrCallbackData {
+    std::unique_ptr<WindowsProcessManager> windowsProcessManager;
+    uint64_t target_address;
+    WindowsModuleEntry* found_module;
+};
+
+struct GetModuleBaseAddressByNameCallbackData {
+    std::unique_ptr<WindowsProcessManager> windowsProcessManager;
+    const char* target_name;
+    uint64_t found_base_address;
+};
+
+struct HasModulePrefixCallbackData {
+    std::unique_ptr<WindowsProcessManager> windowsProcessManager;
+    const char* prefix;
+    size_t prefix_len;
+    bool found;
+};
+
+using ModuleIterCallback =
+    std::function<bool(uint64_t mod_address, bool is_wow64, void* callback_data)>;
+
+using ModuleIterFailureCallback = std::function<void(void* callback_data)>;
+
 uint64_t get_next_process_link(struct WindowsKernelOSI* kosi, uint64_t start_address);
+
+struct WindowsModuleEntry* create_module_entry(WindowsProcessManager* posi,
+                                               uint64_t module_entry_addr, bool is_wow64);
 
 std::string maybe_parse_unicode_string(osi::ustring& ustr)
 {
@@ -334,7 +371,7 @@ void free_process(struct WindowsProcess* p)
 {
     if (p) {
         if (p->cmdline) {
-            delete p->cmdline;
+            delete[] p->cmdline;
         }
         delete p;
     }
@@ -368,6 +405,125 @@ uint64_t process_get_base(const struct WindowsProcess* p) { return p->base_vba; 
 
 bool process_is_wow64(const struct WindowsProcess* p) { return p->is_wow64; }
 
+// Module iterator failure callback for get_module_list
+// Cleanup when corrupted module list is detected
+void get_module_list_failure(void* callback_data)
+{
+    auto mlist = static_cast<WindowsModuleList*>(callback_data);
+    mlist->module_list->clear();
+}
+
+// Module iterator callback for get_module_list
+// Add module to the list of loaded modules
+bool get_module_list_callback(uint64_t mod_address, bool is_wow64, void* callback_data)
+{
+    auto mlist = static_cast<WindowsModuleList*>(callback_data);
+    mlist->module_list->push_back(std::pair<uint64_t, bool>(mod_address, is_wow64));
+    return true;
+}
+
+// iterate_modules helper, see iterate_modules()
+// returns true if module iteration should continue
+template <class T1>
+bool iter_module_list(osi::i_t& ldr_table, T1& pitr, void* callback_data, bool is_wow64,
+                      ModuleIterCallback module_iter_callback,
+                      ModuleIterFailureCallback module_iter_failure_callback)
+{
+
+    std::set<uint64_t> modules;
+    bool rval = true;
+
+    pitr++; // skip head_sentinel
+
+    do {
+        auto entry = *pitr;
+        auto mod_address = entry.get_address();
+        auto insert_result = modules.insert(mod_address);
+        if (!insert_result.second) {
+            fprintf(stderr, "WARNING: Found an anomaly (duplicated module), "
+                            "jumping out...");
+            // Fail hard, we've only seen this when the list is corrupted
+            if (module_iter_failure_callback) {
+                module_iter_failure_callback(callback_data);
+            }
+
+            // Previous version of this file would attempt to iterate non-wow module
+            // list when wow64 module list was corrupted, so return true here to keep
+            // the behavior consistent.  Returning false would stop iterating the list
+            // of modules.
+            return true;
+        }
+
+        // Process the module, return value indicates if iteratation should continue
+        rval = module_iter_callback(mod_address, is_wow64, callback_data);
+
+        if ((!rval) || (!pitr.has_next())) {
+            break;
+        }
+
+        pitr++;
+
+    } while (*pitr != ldr_table);
+
+    return rval;
+}
+
+// Get the InLoadOrderModuleList (wow64)
+osi::i_t get_in_load_order_module_list_wow(osi::i_t& proc)
+{
+    uint32_t peb32_address = proc["Wow64Process"].get32();
+    osi::i_t peb32 = osi::i_t(proc.get_virtual_memory_shared(), proc.get_type_library(),
+                              peb32_address, "_PEB32");
+    uint32_t ldr32_address = peb32["Ldr"].get32();
+    osi::i_t ldr32 = osi::i_t(proc.get_virtual_memory_shared(), proc.get_type_library(),
+                              ldr32_address, "_PEB_LDR_DATA32");
+    return ldr32["InLoadOrderModuleList"].set_type("_LDR_DATA_TABLE_ENTRY32");
+}
+
+// Get the InLoadOrderModuleList (non wow64)
+osi::i_t get_in_load_order_module_list(osi::i_t& proc)
+{
+    auto peb = proc("Peb");
+    if (peb.get_address() == 0) {
+        throw NoPebException();
+    }
+
+    auto ldr = peb("Ldr");
+    return ldr["InLoadOrderModuleList"].set_type("_LDR_DATA_TABLE_ENTRY");
+}
+
+// Iterate over the loaded modules, call module_iter_callback for each module
+// module_iter_callback should return false if the iteration should not continue
+// If an anomaly is found in the module list, module_iter_failure_callback will be called
+bool iterate_modules(bool is_wow64, osi::i_t& proc, void* callback_data,
+                     ModuleIterCallback callback,
+                     ModuleIterFailureCallback failureCallback)
+{
+    if (is_wow64) {
+        try {
+            auto ldr_table32 = get_in_load_order_module_list_wow(proc);
+            osi::iterator32 pitr(ldr_table32, "InLoadOrderLinks");
+            iter_module_list(ldr_table32, pitr, callback_data, true, callback,
+                             failureCallback);
+        } catch (const std::exception& e) {
+            std::cerr << e.what();
+        }
+    }
+
+    try {
+        auto ldr_table = get_in_load_order_module_list(proc);
+        osi::iterator pitr(ldr_table, "InLoadOrderLinks");
+        iter_module_list(ldr_table, pitr, callback_data, false, callback,
+                         failureCallback);
+    } catch (const std::exception& e) {
+        // TODO Make sure this is paged out and not just generic failure
+        return false;
+    }
+
+    return true;
+}
+
+// Get the list of loaded modules
 struct WindowsModuleList* get_module_list(struct WindowsKernelOSI* kosi,
                                           uint64_t process_address, bool is_wow64)
 {
@@ -376,10 +532,10 @@ struct WindowsModuleList* get_module_list(struct WindowsKernelOSI* kosi,
     if (!mlist) {
         return nullptr;
     }
-    mlist->module_list = new std::vector<uint64_t>();
-    mlist->modules = new std::map<uint64_t, bool>();
+    mlist->module_list = new std::vector<std::pair<uint64_t, bool>>();
 
     mlist->posi = std::unique_ptr<WindowsProcessManager>(new WindowsProcessManager());
+
     if (!(mlist->posi->initialize(kosi, process_address))) {
         free_module_list(mlist);
         return nullptr;
@@ -388,92 +544,171 @@ struct WindowsModuleList* get_module_list(struct WindowsKernelOSI* kosi,
     mlist->idx = 0;
     auto proc = mlist->posi->get_process();
 
-    if (is_wow64) {
-        try {
-            uint32_t peb32_address = proc["Wow64Process"].get32();
-            osi::i_t peb32 = osi::i_t(proc.get_virtual_memory_shared(),
-                                      proc.get_type_library(), peb32_address, "_PEB32");
-            uint32_t ldr32_address = peb32["Ldr"].get32();
-            osi::i_t ldr32 =
-                osi::i_t(proc.get_virtual_memory_shared(), proc.get_type_library(),
-                         ldr32_address, "_PEB_LDR_DATA32");
-            auto ldr_table32 =
-                ldr32["InLoadOrderModuleList"].set_type("_LDR_DATA_TABLE_ENTRY32");
-            osi::iterator32 pitr(ldr_table32, "InLoadOrderLinks");
-            pitr++; // skip head_sentinel
-            do {
-                auto entry = *pitr;
-                auto mod_address = entry.get_address();
-                if (mlist->modules->find(mod_address) != mlist->modules->end()) {
-                    fprintf(
-                        stderr,
-                        "WARNING: Found an anomoly (duplicated module), jumping out...");
-                    // Fail hard, we've only seen this when the list is corrupted
-                    mlist->module_list->clear();
-                    mlist->modules->clear();
-                    break;
-                }
-                mlist->module_list->push_back(mod_address);
-                mlist->modules->insert(std::pair<uint64_t, bool>(mod_address, true));
-                if (!pitr.has_next()) {
-                    break;
-                }
-                pitr++;
-            } while (*pitr != ldr_table32);
-        } catch (const std::exception& e) {
-            std::cerr << e.what();
-        }
-    }
-    auto peb = proc("Peb");
-    if (peb.get_address() == 0) {
-        free_module_list(mlist);
-        return nullptr;
-    }
-    try {
-        auto ldr = peb("Ldr");
-        auto ldr_table = ldr["InLoadOrderModuleList"].set_type("_LDR_DATA_TABLE_ENTRY");
-        osi::iterator pitr(ldr_table, "InLoadOrderLinks");
-        pitr++; // skip head_sentinel
-        do {
-            auto entry = *pitr;
-            auto mod_address = entry.get_address();
-            if (mlist->modules->find(mod_address) != mlist->modules->end()) {
-                fprintf(stderr,
-                        "WARNING: Found an anomoly (duplicated module), jumping out...");
-                // Fail hard, we've only seen this when the list is corrupted
-                mlist->module_list->clear();
-                mlist->modules->clear();
-                break;
-            }
-            mlist->module_list->push_back(mod_address);
-            mlist->modules->insert(std::pair<uint64_t, bool>(mod_address, false));
-            if (!pitr.has_next()) {
-                break;
-            }
-            pitr++;
-        } while (*pitr != ldr_table);
-    } catch (const std::exception& e) {
-        // TODO Make sure this is paged out and not just generic failure
-        free_module_list(mlist);
-        return nullptr;
+    if (iterate_modules(is_wow64, proc, mlist, get_module_list_callback,
+                        get_module_list_failure)) {
+        return mlist;
     }
 
-    return mlist;
+    free_module_list(mlist);
+    return nullptr;
 }
 
-struct WindowsModuleEntry* create_module_entry(struct WindowsModuleList* mlist,
+// Module iterator callback for get_module_by_addr
+// Returns false to stop iteration if module contains the address being searched for
+bool get_module_by_addr_callback(uint64_t mod_address, bool is_wow64, void* callback_data)
+{
+
+    auto* data = static_cast<GetModuleByAddrCallbackData*>(callback_data);
+
+    auto data_table_entry = data->windowsProcessManager->get_type(
+        mod_address, is_wow64 ? "_LDR_DATA_TABLE_ENTRY32" : "_LDR_DATA_TABLE_ENTRY");
+
+    uint64_t base_address = is_wow64 ? data_table_entry["DllBase"].get32()
+                                     : data_table_entry["DllBase"].getu();
+
+    // Is this the module being searched for?
+    if (data->target_address >= base_address) {
+        auto modulesize = data_table_entry["SizeOfImage"].get32();
+        if (data->target_address < (base_address + modulesize)) {
+            data->found_module = create_module_entry(data->windowsProcessManager.get(),
+                                                     mod_address, is_wow64);
+            // found target module, stop iterating
+            return false;
+        }
+    }
+
+    // Continue searching
+    return true;
+}
+
+// Module iterator callback for has_module_prefix
+// Returns false to stop iteration if module name starts with the prefix being searched
+// for
+bool has_module_prefix_callback(uint64_t mod_address, bool is_wow64, void* callback_data)
+{
+
+    auto* data = static_cast<HasModulePrefixCallbackData*>(callback_data);
+
+    auto data_table_entry = data->windowsProcessManager->get_type(
+        mod_address, is_wow64 ? "_LDR_DATA_TABLE_ENTRY32" : "_LDR_DATA_TABLE_ENTRY");
+
+    osi::ustring dllname(data_table_entry["BaseDllName"]);
+    std::string dllname_utf8 = maybe_parse_unicode_string(dllname);
+
+    // Is this the module being searched for?
+    if (0 == strncmp(data->prefix, dllname_utf8.c_str(), data->prefix_len)) {
+        data->found = true;
+        // found target module, stop iterating
+        return false;
+    }
+
+    // Continue searching
+    return true;
+}
+
+// Module iterator callback for get_module_base_address_by_name
+// Returns false to stop iteration if module name matches the name being searched for
+bool get_module_base_address_by_name_callback(uint64_t mod_address, bool is_wow64,
+                                              void* callback_data)
+{
+
+    auto* data = static_cast<GetModuleBaseAddressByNameCallbackData*>(callback_data);
+
+    auto data_table_entry = data->windowsProcessManager->get_type(
+        mod_address, is_wow64 ? "_LDR_DATA_TABLE_ENTRY32" : "_LDR_DATA_TABLE_ENTRY");
+
+    osi::ustring dllname(data_table_entry["BaseDllName"]);
+    std::string dllname_utf8 = maybe_parse_unicode_string(dllname);
+
+    // Is this the module being searched for?
+    if (0 == g_strcmp0(data->target_name, dllname_utf8.c_str())) {
+        data->found_base_address = is_wow64 ? data_table_entry["DllBase"].get32()
+                                            : data_table_entry["DllBase"].getu();
+        // found target module, stop iterating
+        return false;
+    }
+
+    // Continue searching
+    return true;
+}
+
+// Returns module entry that matches addr
+struct WindowsModuleEntry* get_module_by_addr(struct WindowsKernelOSI* kosi,
+                                              uint64_t process_address, bool is_wow64,
+                                              uint64_t addr)
+{
+    GetModuleByAddrCallbackData callback_data = {
+        std::unique_ptr<WindowsProcessManager>(new WindowsProcessManager()), addr};
+
+    if (callback_data.windowsProcessManager->initialize(kosi, process_address)) {
+
+        auto proc = callback_data.windowsProcessManager->get_process();
+
+        if (iterate_modules(is_wow64, proc, &callback_data, get_module_by_addr_callback,
+                            nullptr)) {
+
+            return callback_data.found_module;
+        }
+    }
+    return nullptr;
+}
+
+// Returns true if a module is loaded whose name starts with prefix
+bool has_module_prefix(struct WindowsKernelOSI* kosi, uint64_t process_address,
+                       bool is_wow64, const char* prefix)
+{
+    HasModulePrefixCallbackData callback_data = {
+        std::unique_ptr<WindowsProcessManager>(new WindowsProcessManager()), prefix,
+        strlen(prefix)};
+
+    if (callback_data.windowsProcessManager->initialize(kosi, process_address)) {
+
+        auto proc = callback_data.windowsProcessManager->get_process();
+
+        if (iterate_modules(is_wow64, proc, &callback_data, has_module_prefix_callback,
+                            nullptr)) {
+
+            return callback_data.found;
+        }
+    }
+    return false;
+}
+
+// Returns base address for module with specified name
+uint64_t get_module_base_address_by_name(struct WindowsKernelOSI* kosi,
+                                         uint64_t process_address, bool is_wow64,
+                                         const char* name)
+{
+
+    GetModuleBaseAddressByNameCallbackData callback_data = {
+        std::unique_ptr<WindowsProcessManager>(new WindowsProcessManager()), name};
+
+    if (callback_data.windowsProcessManager->initialize(kosi, process_address)) {
+
+        auto proc = callback_data.windowsProcessManager->get_process();
+
+        if (iterate_modules(is_wow64, proc, &callback_data,
+                            get_module_base_address_by_name_callback, nullptr)) {
+
+            return callback_data.found_base_address;
+        }
+    }
+    return 0;
+}
+
+struct WindowsModuleEntry* create_module_entry(WindowsProcessManager* posi,
                                                uint64_t module_entry_addr, bool is_wow64)
 {
-    if (is_wow64) {
-        auto mentry =
-            (struct WindowsModuleEntry*)std::calloc(1, sizeof(struct WindowsModuleEntry));
+    auto mentry =
+        (struct WindowsModuleEntry*)std::calloc(1, sizeof(struct WindowsModuleEntry));
+    mentry->module_entry = module_entry_addr;
 
-        auto data_table_entry =
-            mlist->posi->get_type(module_entry_addr, "_LDR_DATA_TABLE_ENTRY32");
+    // No point if we can't capture these
+    try {
+        if (is_wow64) {
+            auto data_table_entry =
+                posi->get_type(module_entry_addr, "_LDR_DATA_TABLE_ENTRY32");
 
-        mentry->module_entry = module_entry_addr;
-        // No point if we can't capture these
-        try {
             mentry->base_address = data_table_entry["DllBase"].get32();
             mentry->modulesize = data_table_entry["SizeOfImage"].get32();
             mentry->checksum = data_table_entry["CheckSum"].get32();
@@ -489,40 +724,29 @@ struct WindowsModuleEntry* create_module_entry(struct WindowsModuleList* mlist,
             osi::ustring dllpath(data_table_entry["FullDllName"]);
             std::string dllpath_utf8 = maybe_parse_unicode_string(dllpath);
             strncpy(mentry->dllpath, dllpath_utf8.c_str(), MAX_PATH_SIZE - 1);
-        } catch (...) {
-            free_module_entry(mentry);
-            return nullptr;
+        } else {
+            auto data_table_entry =
+                posi->get_type(module_entry_addr, "_LDR_DATA_TABLE_ENTRY");
+
+            mentry->base_address = data_table_entry["DllBase"].getu();
+            mentry->modulesize = data_table_entry["SizeOfImage"].get32();
+            mentry->checksum = data_table_entry["CheckSum"].get32();
+            mentry->entrypoint = data_table_entry["EntryPoint"].getu();
+            mentry->flags = data_table_entry["Flags"].get32();
+            mentry->timedatestamp = data_table_entry["TimeDateStamp"].get32();
+            mentry->loadcount = data_table_entry["LoadCount"].get16();
+
+            osi::ustring dllname(data_table_entry["BaseDllName"]);
+            std::string dllname_utf8 = maybe_parse_unicode_string(dllname);
+            strncpy(mentry->dllname, dllname_utf8.c_str(), MAX_PATH_SIZE - 1);
+
+            osi::ustring dllpath(data_table_entry["FullDllName"]);
+            std::string dllpath_utf8 = maybe_parse_unicode_string(dllpath);
+            strncpy(mentry->dllpath, dllpath_utf8.c_str(), MAX_PATH_SIZE - 1);
         }
-        return mentry;
-    }
-
-    auto mentry =
-        (struct WindowsModuleEntry*)std::calloc(1, sizeof(struct WindowsModuleEntry));
-    auto data_table_entry =
-        mlist->posi->get_type(module_entry_addr, "_LDR_DATA_TABLE_ENTRY");
-
-    mentry->module_entry = module_entry_addr;
-    // No point if we can't capture these
-    try {
-        mentry->base_address = data_table_entry["DllBase"].getu();
-        mentry->modulesize = data_table_entry["SizeOfImage"].get32();
-        mentry->checksum = data_table_entry["CheckSum"].get32();
-        mentry->entrypoint = data_table_entry["EntryPoint"].getu();
-        mentry->flags = data_table_entry["Flags"].get32();
-        mentry->timedatestamp = data_table_entry["TimeDateStamp"].get32();
-        mentry->loadcount = data_table_entry["LoadCount"].get16();
-
-        osi::ustring dllname(data_table_entry["BaseDllName"]);
-        std::string dllname_utf8 = maybe_parse_unicode_string(dllname);
-        strncpy(mentry->dllname, dllname_utf8.c_str(), MAX_PATH_SIZE - 1);
-
-        osi::ustring dllpath(data_table_entry["FullDllName"]);
-        std::string dllpath_utf8 = maybe_parse_unicode_string(dllpath);
-        strncpy(mentry->dllpath, dllpath_utf8.c_str(), MAX_PATH_SIZE - 1);
-
     } catch (...) {
         free_module_entry(mentry);
-        return nullptr;
+        mentry = nullptr;
     }
     return mentry;
 }
@@ -542,10 +766,11 @@ struct WindowsModuleEntry* module_list_next(struct WindowsModuleList* mlist)
         return nullptr;
     }
 
-    auto mod_address = (*(mlist->module_list))[mlist->idx++];
-    bool mod_iswow64 = (*(mlist->modules))[mod_address];
+    auto mod_pair = (*(mlist->module_list))[mlist->idx++];
+    auto mod_address = mod_pair.first;
+    bool mod_iswow64 = mod_pair.second;
     // TOOD push this down into module_entry ctor
-    auto mod_entry = create_module_entry(mlist, mod_address, mod_iswow64);
+    auto mod_entry = create_module_entry(mlist->posi.get(), mod_address, mod_iswow64);
     if (!mod_entry) {
         // skip invalid
         return module_list_next(mlist);
@@ -562,7 +787,6 @@ void free_module_list(struct WindowsModuleList* mlist)
 {
     if (mlist) {
         delete mlist->module_list;
-        delete mlist->modules;
         std::free(mlist);
     }
 }
