@@ -72,6 +72,14 @@ void free_process(struct WindowsProcess*);
 const uint8_t MODULELIST_LOAD_ORDER = 0;
 struct WindowsModuleList* get_module_list(struct WindowsKernelOSI* kosi, uint64_t address,
                                           bool iswow);
+struct WindowsModuleEntry* get_module_by_addr(struct WindowsKernelOSI* kosi,
+                                              uint64_t process_address, bool is_wow64,
+                                              uint64_t addr);
+uint64_t get_module_base_address_by_name(struct WindowsKernelOSI* kosi,
+                                         uint64_t process_address, bool is_wow64,
+                                         const char* name);
+bool has_module_prefix(struct WindowsKernelOSI* kosi, uint64_t process_address,
+                       bool is_wow64, const char* prefix);
 struct WindowsModuleEntry* module_list_next(struct WindowsModuleList*);
 struct WindowsProcessOSI* module_list_get_osi(struct WindowsModuleList* mlist);
 void free_module_list(struct WindowsModuleList* mlist);
