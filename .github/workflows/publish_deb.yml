@@ -1,0 +1,54 @@
+name: Publish deb package
+
+on:
+  push:
+    branches:
+      dev
+
+jobs:
+  create_release:
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+    steps:
+      - name: Get next version
+        uses: reecetech/version-increment@2023.10.1
+        id: version
+        with:
+          use_api: true
+      - name: Create release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: libosi_${{ steps.version.outputs.version }}
+          release_name: libosi_${{ steps.version.outputs.version }}
+
+  build_deb:
+    needs: create_release
+    strategy:
+      matrix:
+        ubuntu_version:
+          - 20.04
+          - 22.04
+
+    steps:
+      - name: Install git
+        run: sudo apt-get -qq update -y && sudo apt-get -qq install cmake ninja-build rapidjson-dev -y
+
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Build package
+        working-directory: .
+        run: mkdir build && cd build && cmake -GNinja .. && ninja
+
+      - name: Upload to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: build/libosi.so
+          asset_name: libosi_${{ matrix.ubuntu_version }}.deb
+          asset_content_type: application/vnd.debian.binary-package
