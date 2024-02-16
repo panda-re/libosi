@@ -3,7 +3,7 @@ name: Publish deb package
 on:
   push:
     branches:
-      dev
+      master
 
 jobs:
   create_release:
