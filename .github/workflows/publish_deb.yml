@@ -43,7 +43,7 @@ jobs:
 
       - name: Build package
         working-directory: .
-        run: mkdir build && cd build && cmake -GNinja .. && ninja
+        run: mkdir build && cd build && cmake -GNinja .. && ninja && ninja package
 
       - name: Upload to release
         uses: actions/upload-release-asset@v1
@@ -51,6 +51,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: build/libosi.so
+          asset_path: build/libosi-0.1.1-Linux.deb
           asset_name: libosi_${{ matrix.ubuntu_version }}.deb
           asset_content_type: application/vnd.debian.binary-package
