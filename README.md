@@ -16,6 +16,10 @@ Currently, the following profiles are supported:
 | linux-32-3.16      | full             |
 | linux-64-3.16      | full             |
 
+### Easy mode (apt releases)
+
+See our releases page for the latest CI generated deb packages for Ubuntu 18.04, 20.04, and 22.04.
+
 ### Prerequisites
 
 Install dependencies. On Ubuntu, this can be done with:
