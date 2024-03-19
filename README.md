@@ -18,7 +18,7 @@ Currently, the following profiles are supported:
 
 ### Easy mode (apt releases)
 
-See our releases page for the latest CI generated deb packages for Ubuntu 18.04, 20.04, and 22.04.
+See our releases page for the latest CI generated deb packages for Ubuntu 20.04 and 22.04.
 
 ### Prerequisites
 
