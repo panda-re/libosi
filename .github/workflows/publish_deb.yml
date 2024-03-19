@@ -25,15 +25,9 @@ jobs:
           tag_name: ${{ steps.version.outputs.version }}
           release_name: ${{ steps.version.outputs.version }}
 
-  build_deb:
+  build_deb_2004:
     needs: create_release
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        ubuntu_version:
-          - 18.04
-          - 20.04
-          - 22.04
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Install git
@@ -53,5 +47,30 @@ jobs:
         with:
           upload_url: ${{ needs.create_release.outputs.upload_url }}
           asset_path: build/libosi-0.1.1-Linux.deb
-          asset_name: libosi_${{ matrix.ubuntu_version }}.deb
+          asset_name: libosi_20.04.deb
+          asset_content_type: application/vnd.debian.binary-package
+          
+  build_deb_2204:
+    needs: create_release
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Install git
+        run: sudo apt-get -qq update -y && sudo apt-get -qq install cmake ninja-build rapidjson-dev -y
+
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Build package
+        working-directory: .
+        run: mkdir build && cd build && cmake -GNinja .. && ninja && ninja package
+
+      - name: Upload to release
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create_release.outputs.upload_url }}
+          asset_path: build/libosi-0.1.1-Linux.deb
+          asset_name: libosi_22.04.deb
           asset_content_type: application/vnd.debian.binary-package
