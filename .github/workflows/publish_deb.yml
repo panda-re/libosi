@@ -39,9 +39,6 @@ jobs:
         working-directory: .
         run: mkdir build && cd build && cmake -GNinja .. && ninja && ninja package
 
-      - name: Rename .deb file
-        run: mv build/libosi-0.1.1-Linux.deb build/libosi_20.04.deb
-
       - name: Upload debian package to release
         uses: softprops/action-gh-release@v2
         env:
@@ -65,9 +62,6 @@ jobs:
       - name: Build package
         working-directory: .
         run: mkdir build && cd build && cmake -GNinja .. && ninja && ninja package
-
-      - name: Rename .deb file
-        run: mv build/libosi-0.1.1-Linux.deb build/libosi_22.04.deb
 
       - name: Upload debian package to release
         uses: softprops/action-gh-release@v2
