@@ -7,23 +7,22 @@ on:
 
 jobs:
   create_release:
-    runs-on: ubuntu-latest
+    runs-on: panda-arc
+    
     outputs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
+      v-version: ${{ steps.version.outputs.v-version }}
+    
     steps:
+      - name: Install git
+        run: sudo apt-get -qq update -y && sudo apt-get -qq install git curl jq -y
+      
       - name: Get next version
-        uses: reecetech/version-increment@2023.10.1
+        uses: reecetech/version-increment@2023.10.2
         id: version
         with:
+          release_branch: master
           use_api: true
-      - name: Create release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          release_name: ${{ steps.version.outputs.version }}
 
   build_deb_2004:
     needs: create_release
@@ -40,16 +39,18 @@ jobs:
         working-directory: .
         run: mkdir build && cd build && cmake -GNinja .. && ninja && ninja package
 
-      - name: Upload to release
-        uses: actions/upload-release-asset@v1
+      - name: Rename .deb file
+        run: mv build/libosi-0.1.1-Linux.deb build/libosi_20.04.deb
+
+      - name: Upload debian package to release
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: build/libosi-0.1.1-Linux.deb
-          asset_name: libosi_20.04.deb
-          asset_content_type: application/vnd.debian.binary-package
-          
+          tag_name: ${{ needs.create_release.outputs.v-version }}
+          files: |
+            build/*.deb
+
   build_deb_2204:
     needs: create_release
     runs-on: ubuntu-22.04
@@ -65,12 +66,14 @@ jobs:
         working-directory: .
         run: mkdir build && cd build && cmake -GNinja .. && ninja && ninja package
 
-      - name: Upload to release
-        uses: actions/upload-release-asset@v1
+      - name: Rename .deb file
+        run: mv build/libosi-0.1.1-Linux.deb build/libosi_22.04.deb
+
+      - name: Upload debian package to release
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create_release.outputs.upload_url }}
-          asset_path: build/libosi-0.1.1-Linux.deb
-          asset_name: libosi_22.04.deb
-          asset_content_type: application/vnd.debian.binary-package
+          tag_name: ${{ needs.create_release.outputs.v-version }}
+          files: |
+            build/*.deb
