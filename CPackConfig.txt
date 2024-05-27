@@ -1,3 +1,11 @@
+# Check if the system is Ubuntu
+execute_process(COMMAND bash -c "if grep -q Ubuntu /etc/issue; then echo 'Ubuntu'; else echo 'NotUbuntu'; fi"
+                OUTPUT_VARIABLE UBUNTU_CHECK
+                OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+# Print the result of the Ubuntu check
+message(STATUS "Ubuntu check result: ${UBUNTU_CHECK}")
+
 set(CPACK_PACKAGE_NAME "libosi")
 set(CPACK_PACKAGE_DESCRIPTION "Operating System Introspection Support for PANDA plugins")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Operating System Introspection Support for PANDA plugins")
@@ -20,6 +28,14 @@ set(CPACK_GENERATOR "DEB")
 set(CPACK_SOURCE_GENERATOR "TGZ")
 
 set(CPACK_SOURCE_IGNORE_FILES "^${CMAKE_BINARY_DIR};/\\\\.gitignore;/\\\\.svn;\\\\.swp$;\\\\.#;/#;.*~")
+
+# Conditionally set the package file name if on Ubuntu
+if(UBUNTU_CHECK STREQUAL "Ubuntu")
+    execute_process(COMMAND lsb_release -r -s
+                    OUTPUT_VARIABLE UBUNTU_VERSION
+                    OUTPUT_STRIP_TRAILING_WHITESPACE)
+    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}_${UBUNTU_VERSION}")
+endif()
 
 include(CPack)
 
