@@ -10,7 +10,6 @@ jobs:
     runs-on: panda-arc
     
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
       v-version: ${{ steps.version.outputs.v-version }}
     
     steps:
