@@ -13,9 +13,6 @@ jobs:
       v-version: ${{ steps.version.outputs.v-version }}
     
     steps:
-      - name: Install git
-        run: sudo apt-get -qq update -y && sudo apt-get -qq install git curl jq -y
-      
       - name: Get next version
         uses: reecetech/version-increment@2023.10.2
         id: version
