@@ -1,6 +1,7 @@
 execute_process(COMMAND lsb_release -r -s
                 OUTPUT_VARIABLE UBUNTU_VERSION
                 OUTPUT_STRIP_TRAILING_WHITESPACE)
+message("Ubuntu version: ${UBUNTU_VERSION}")
 
 set(CPACK_PACKAGE_NAME "libosi")
 set(CPACK_PACKAGE_DESCRIPTION "Operating System Introspection Support for PANDA plugins")
