@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Install git
+      - name: Install dependencies
         run: sudo apt-get -qq update -y && sudo apt-get -qq install cmake ninja-build rapidjson-dev -y
 
       - name: Check out
@@ -57,7 +57,12 @@ jobs:
 
       - name: Build package
         working-directory: .
-        run: mkdir build && cd build && cmake -GNinja .. && ninja && ninja package
+        run: | 
+          mkdir build
+          cd build
+          cmake -GNinja .. -DVERSION=${{ needs.create_release.outputs.v-version }}
+          ninja
+          ninja package
 
       - name: Upload debian package to release
         uses: softprops/action-gh-release@v2
