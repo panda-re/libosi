@@ -1,0 +1,2 @@
+# Ensure Unix-style line endings for the triggers file
+triggers text eol=lf

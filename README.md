@@ -35,9 +35,8 @@ sudo apt-get install cmake ninja-build rapidjson-dev
 To build libosi, from the root of this repo run:
 
 ```bash
-mkdir build && cd $_
-cmake -GNinja ..
-ninja
+cmake -B build -GNinja -DCMAKE_INSTALL_PREFIX=/usr
+ninja -C build
 ```
 
 ### Installing
@@ -45,8 +44,9 @@ ninja
 Installing libosi includes running:
 
 ```bash
-cd build && ninja package
-sudo dpkg -i libosi-[version].deb
+ninja -C build package
+cd build
+sudo dpkg -i libosi*.deb
 ```
 
 ### Testing
@@ -57,12 +57,10 @@ first need to install dependencies and enable testing:
 ```bash
 sudo apt-get install libgtest-dev
 
-cd build
-cmake -GNinja -DENABLE_TESTING=ON ..
-ninja
+cmake -B build -GNinja -DENABLE_TESTING=ON
+ninja -C build
+ninja -C build test
 ```
-
-You can then run the tests with just `ninja test`.
 
 ### Development 
 
