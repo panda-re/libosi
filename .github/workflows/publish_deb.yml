@@ -1,6 +1,7 @@
 name: Publish deb package
 
 on:
+  workflow_dispatch:
   push:
     branches:
       master
@@ -20,42 +21,37 @@ jobs:
           release_branch: master
           use_api: true
 
-  build_deb_2004:
+  build_and_publish:
     needs: create_release
-    runs-on: ubuntu-20.04
-
-    steps:
-      - name: Install git
-        run: sudo apt-get -qq update -y && sudo apt-get -qq install cmake ninja-build rapidjson-dev -y
-
-      - name: Check out
-        uses: actions/checkout@v4
-
-      - name: Build package
-        working-directory: .
-        run: mkdir build && cd build && cmake -GNinja .. && ninja && ninja package
-
-      - name: Upload debian package to release
-        uses: softprops/action-gh-release@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ needs.create_release.outputs.v-version }}
-          files: |
-            build/*.deb
-
-  build_deb_2204:
-    needs: create_release
-    runs-on: ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, ubuntu-22.04]
 
     steps:
       - name: Install dependencies
-        run: sudo apt-get -qq update -y && sudo apt-get -qq install cmake ninja-build rapidjson-dev -y
+        run: |
+          sudo apt-get -qq update -y
+          sudo apt-get -qq install cmake ninja-build rapidjson-dev libgtest-dev -y
 
       - name: Check out
         uses: actions/checkout@v4
 
+      - name: Build with testing enabled and run tests
+        working-directory: .
+        run: | 
+          mkdir build
+          cd build
+          cmake -GNinja -DENABLE_TESTING=ON ..
+          ninja
+          ninja test
+  
+      - name: Remove build directory after tests
+        if: success() # Only run if tests pass
+        run: rm -rf build
+
       - name: Build package
+        if: success() # Only run if tests pass
         working-directory: .
         run: | 
           mkdir build
@@ -65,6 +61,7 @@ jobs:
           ninja package
 
       - name: Upload debian package to release
+        if: success() # Only run if package build succeeds
         uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
