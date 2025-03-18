@@ -34,6 +34,10 @@ uint64_t resolve_base_x64(struct WindowsProcessOSI *posi, uint64_t value, uint32
         // fall through
     }
     case 0:
+	if (base == 0){
+            // couldn't read vmem, skipping
+	    break;
+	}
         base = base + (handle_obj.LowIndex * HANDLE_ENTRY_SIZE_64);
         break;
     default:
@@ -61,6 +65,10 @@ uint32_t resolve_base_x86(struct WindowsProcessOSI *posi, uint32_t value, uint32
         // fall through
     }
     case 0:
+	if (base == 0){
+            // couldn't read vmem, skipping
+	    break;
+	}
         base = base + (handle_obj.LowIndex * HANDLE_ENTRY_SIZE_32);
         break;
     default:
@@ -92,6 +100,9 @@ osi::i_t resolve_handle_table_entry(struct WindowsProcessOSI* posi, uint64_t han
         entry = resolve_base_x86(posi, static_cast<uint32_t>(handle), table_level,
                                  static_cast<uint32_t>(table_base));
     }
+
+    if (!entry)
+        return osi::i_t();
 
     uint64_t header = obj.set_address(entry).getu() & TABLE_MASK;
     return obj.set_address(header).set_type("_OBJECT_HEADER");
