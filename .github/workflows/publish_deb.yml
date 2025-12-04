@@ -38,8 +38,8 @@ jobs:
 
       - name: Build package
         run: | 
-          cmake -B build -GNinja -DCMAKE_INSTALL_PREFIX=/usr -DVERSION=${{ needs.create_release.outputs.v-version }}
-          ninja -C build
+          cmake -B build -GNinja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DVERSION=${{ needs.create_release.outputs.v-version }}
+          ninja -C build -j$(nproc)
           ninja -C build package
 
       - name: Upload debian package to release
@@ -49,4 +49,4 @@ jobs:
         with:
           tag_name: ${{ needs.create_release.outputs.v-version }}
           files: |
-            build/*.deb
+            build/libosi*.deb

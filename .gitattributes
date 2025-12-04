@@ -1,2 +1,9 @@
-# Ensure Unix-style line endings for the triggers file
-triggers text eol=lf
+# Always checkout with LF
+*.sh            text eol=lf
+*.bash          text eol=lf
+
+# Always checkout with CRLF
+*.bat           text eol=crlf
+
+# Default behavior: CRLF on Windows, LF on Unix
+*               text=auto

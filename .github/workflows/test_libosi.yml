@@ -6,6 +6,11 @@ on:
     branches:
       - master
 
+# Automatically cancel any previous workflow on new push.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
 jobs:
   test_libosi:
     runs-on: ${{ matrix.os }}
@@ -25,5 +30,15 @@ jobs:
       - name: Build with testing enabled and run tests
         run: | 
           cmake -B build -GNinja -DENABLE_TESTING=ON
-          ninja -C build
+          ninja -C build -j$(nproc)
           ninja -C build test
+
+      - name: Test installing Debian package
+        run: |
+          ninja -C build package
+          sudo dpkg -i build/libosi*.deb
+          if ! ldconfig -p | grep -q libosi; then
+            echo "libosi not found in linker cache Debian Package corrupt!"
+            exit 1
+          fi
+  
