@@ -20,7 +20,7 @@ endif()
 
 # find glib and link to it
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(RAPIDJSON_PKG REQUIRED IMPORTED_TARGET RapidJSON)
+pkg_check_modules(RAPIDJSON_PKG REQUIRED RapidJSON)
 pkg_check_modules(GLIB_PKG REQUIRED glib-2.0)
 include_directories(${GLIB_PKG_INCLUDE_DIRS})
 
@@ -63,21 +63,26 @@ target_include_directories(offset-obj PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/offset>
     ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_target_properties(offset-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
-target_link_libraries(offset-obj PRIVATE PkgConfig::RAPIDJSON_PKG)
+target_include_directories(offset-obj PRIVATE ${RAPIDJSON_PKG_INCLUDE_DIRS})
 
 set(OFFSET_PROFILES_DIR "${CMAKE_INSTALL_PREFIX}/share/offset/profiles")
+# The same directory relative to the library, for relocated installs
+file(RELATIVE_PATH OFFSET_PROFILES_RELDIR "${CMAKE_INSTALL_FULL_LIBDIR}" "${OFFSET_PROFILES_DIR}")
 target_compile_definitions(offset-obj PRIVATE
     OFFSET_PROFILES_DIR="${OFFSET_PROFILES_DIR}"
+    OFFSET_PROFILES_RELDIR="${OFFSET_PROFILES_RELDIR}"
 )
 
 # Then package them into a shared library and a static library
 add_library(offset SHARED $<TARGET_OBJECTS:offset-obj>)
+target_link_libraries(offset PUBLIC ${CMAKE_DL_LIBS})
 target_include_directories(offset PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/offset>
     $<INSTALL_INTERFACE:include>)
 
 add_library(offset-static STATIC $<TARGET_OBJECTS:offset-obj>)
+target_link_libraries(offset-static PUBLIC ${CMAKE_DL_LIBS})
 target_include_directories(offset-static PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/offset>
