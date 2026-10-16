@@ -20,7 +20,7 @@ endif()
 
 # find glib and link to it
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(RAPIDJSON_PKG REQUIRED IMPORTED_TARGET RapidJSON)
+pkg_check_modules(RAPIDJSON_PKG REQUIRED RapidJSON)
 pkg_check_modules(GLIB_PKG REQUIRED glib-2.0)
 include_directories(${GLIB_PKG_INCLUDE_DIRS})
 
@@ -63,7 +63,7 @@ target_include_directories(offset-obj PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/offset>
     ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_target_properties(offset-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
-target_link_libraries(offset-obj PRIVATE PkgConfig::RAPIDJSON_PKG)
+target_include_directories(offset-obj PRIVATE ${RAPIDJSON_PKG_INCLUDE_DIRS})
 
 set(OFFSET_PROFILES_DIR "${CMAKE_INSTALL_PREFIX}/share/offset/profiles")
 target_compile_definitions(offset-obj PRIVATE
