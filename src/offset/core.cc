@@ -114,25 +114,57 @@ void deserialize_from_json(StructureTypeLibrary* tlib, std::istream& file)
     tlib->ENUM = std::move(profile.ENUM);
 }
 
+namespace
+{
+
+// Env override, else relative to the loaded library, else the configure-time path.
+std::filesystem::path profiles_directory()
+{
+    const char* env = std::getenv("LIBOSI_PROFILES_DIR");
+    if (env && *env) {
+        return env;
+    }
+
+    Dl_info info;
+    if (dladdr(reinterpret_cast<void*>(&load_type_library), &info) && info.dli_fname) {
+        std::error_code ec;
+        const auto candidate =
+            std::filesystem::path(info.dli_fname).parent_path() / OFFSET_PROFILES_RELDIR;
+        if (std::filesystem::is_directory(candidate, ec)) {
+            return candidate;
+        }
+    }
+    return OFFSET_PROFILES_DIR;
+}
+
+bool is_plain_profile_name(const std::string& name)
+{
+    return !name.empty() && name.find('/') == std::string::npos &&
+           name.find("..") == std::string::npos;
+}
+
+} // namespace
+
 struct StructureTypeLibrary* load_type_library(const char* profile)
 {
     if (!profile) {
         return nullptr;
     }
 
+    if (!is_plain_profile_name(profile)) {
+        std::cerr << "libosi: invalid offset profile name '" << profile << "'"
+                  << std::endl;
+        return nullptr;
+    }
+
     auto stm = new StructureTypeLibrary();
     stm->profile = std::string(profile);
 
-    // LIBOSI_PROFILES_DIR overrides the compiled-in install location.
-    const char* profiles_dir = std::getenv("LIBOSI_PROFILES_DIR");
-    std::filesystem::path profile_path{
-        (profiles_dir && *profiles_dir) ? profiles_dir : OFFSET_PROFILES_DIR};
-    profile_path /= profile;
-    profile_path += ".json";
-
+    const auto profile_path = profiles_directory() / (stm->profile + ".json");
     std::ifstream profile_file(profile_path);
 
     if (!profile_file.is_open()) {
+        std::cerr << "libosi: cannot open offset profile " << profile_path << std::endl;
         delete stm;
         return nullptr;
     }
