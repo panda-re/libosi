@@ -102,6 +102,9 @@ const struct StructureType* add_tid_to_map(struct StructureTypeLibrary* tlib,
     return st;
 }
 
+namespace
+{
+
 void deserialize_from_json(StructureTypeLibrary* tlib, std::istream& file)
 {
     Profile profile;
@@ -113,9 +116,6 @@ void deserialize_from_json(StructureTypeLibrary* tlib, std::istream& file)
     tlib->TRANSLATE = std::move(profile.TRANSLATE);
     tlib->ENUM = std::move(profile.ENUM);
 }
-
-namespace
-{
 
 // Env override, else relative to the loaded library, else the configure-time path.
 std::filesystem::path profiles_directory()
