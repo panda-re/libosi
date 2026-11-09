@@ -20,6 +20,13 @@ TEST(BasicTest, TypeLibraryLoading)
     ASSERT_TRUE(doesnt_exist == nullptr) << "Found a library that didn't exist!";
 }
 
+TEST(BasicTest, PathLikeProfileNamesAreRejected)
+{
+    for (const char* name : {"../windows-64-7sp1", "/etc/passwd", "a/b", ""}) {
+        ASSERT_EQ(load_type_library(name), nullptr) << "accepted '" << name << "'";
+    }
+}
+
 TEST(BasicTest, BasicTranslation)
 {
     auto tlib = load_type_library("windows-64-7sp1");
