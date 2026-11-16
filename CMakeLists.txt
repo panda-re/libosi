@@ -75,14 +75,14 @@ target_compile_definitions(offset-obj PRIVATE
 
 # Then package them into a shared library and a static library
 add_library(offset SHARED $<TARGET_OBJECTS:offset-obj>)
-target_link_libraries(offset PUBLIC ${CMAKE_DL_LIBS})
+target_link_libraries(offset PRIVATE ${CMAKE_DL_LIBS})
 target_include_directories(offset PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/offset>
     $<INSTALL_INTERFACE:include>)
 
 add_library(offset-static STATIC $<TARGET_OBJECTS:offset-obj>)
-target_link_libraries(offset-static PUBLIC ${CMAKE_DL_LIBS})
+target_link_libraries(offset-static PRIVATE ${CMAKE_DL_LIBS})
 target_include_directories(offset-static PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/offset>
