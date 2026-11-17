@@ -1,0 +1,301 @@
+{
+    "offsets": {
+        "UNKNOWN": null,
+        "_LIST_ENTRY": {
+            "Flink": {
+                "offset": 0,
+                "type": 2147483649
+            },
+            "Blink": {
+                "offset": 4,
+                "type": 2147483649
+            }
+        },
+        "_UNICODE_STRING": {
+            "Length": {
+                "offset": 0,
+                "type": 0
+            },
+            "MaximumLength": {
+                "offset": 2,
+                "type": 0
+            },
+            "Buffer": {
+                "offset": 4,
+                "type": 2147483648
+            }
+        },
+        "_DISPATCHER_HEADER": {
+            "Type": {
+                "offset": 0,
+                "type": 0
+            },
+            "Size": {
+                "offset": 2,
+                "type": 0
+            }
+        },
+        "_PEB_LDR_DATA": {
+            "InLoadOrderModuleList": {
+                "offset": 12,
+                "type": 1
+            }
+        },
+        "_LDR_DATA_TABLE_ENTRY": {
+            "InLoadOrderLinks": {
+                "offset": 0,
+                "type": 1
+            },
+            "DllBase": {
+                "offset": 24,
+                "type": 2147483648
+            },
+            "EntryPoint": {
+                "offset": 28,
+                "type": 2147483648
+            },
+            "SizeOfImage": {
+                "offset": 32,
+                "type": 0
+            },
+            "FullDllName": {
+                "offset": 36,
+                "type": 2
+            },
+            "BaseDllName": {
+                "offset": 44,
+                "type": 2
+            },
+            "Flags": {
+                "offset": 52,
+                "type": 0
+            },
+            "LoadCount": {
+                "offset": 56,
+                "type": 0
+            },
+            "CheckSum": {
+                "offset": 64,
+                "type": 0
+            },
+            "TimeDateStamp": {
+                "offset": 68,
+                "type": 0
+            }
+        },
+        "_CURDIR": {
+            "DosPath": {
+                "offset": 0,
+                "type": 2
+            },
+            "Handle": {
+                "offset": 8,
+                "type": 2147483648
+            }
+        },
+        "_RTL_USER_PROCESS_PARAMETERS": {
+            "StandardInput": {
+                "offset": 24,
+                "type": 2147483648
+            },
+            "StandardOutput": {
+                "offset": 28,
+                "type": 2147483648
+            },
+            "StandardError": {
+                "offset": 32,
+                "type": 2147483648
+            },
+            "CurrentDirectory": {
+                "offset": 36,
+                "type": 6
+            },
+            "DllPath": {
+                "offset": 48,
+                "type": 2
+            },
+            "ImagePathName": {
+                "offset": 56,
+                "type": 2
+            },
+            "CommandLine": {
+                "offset": 64,
+                "type": 2
+            },
+            "DesktopInfo": {
+                "offset": 120,
+                "type": 2
+            }
+        },
+        "_FILE_OBJECT": {
+            "FileName": {
+                "offset": 48,
+                "type": 2
+            },
+            "CurrentByteOffset": {
+                "offset": 56,
+                "type": 0
+            }
+        },
+        "_OBJECT_TYPE": {
+            "Name": {
+                "offset": 64,
+                "type": 2
+            },
+            "Index": {
+                "offset": 76,
+                "type": 0
+            }
+        },
+        "_OBJECT_HEADER": {
+            "Type": {
+                "offset": 8,
+                "type": 2147483657
+            },
+            "Body": {
+                "offset": 24,
+                "type": 0
+            }
+        },
+        "_HANDLE_TABLE": {
+            "TableCode": {
+                "offset": 0,
+                "type": 0
+            },
+            "Layer1": {
+                "offset": 8,
+                "type": 0
+            }
+        },
+        "_CLIENT_ID": {
+            "UniqueProcess": {
+                "offset": 0,
+                "type": 2147483648
+            },
+            "UniqueThread": {
+                "offset": 4,
+                "type": 2147483648
+            }
+        },
+        "_ETHREAD": {
+            "Cid": {
+                "offset": 480,
+                "type": 12
+            },
+            "ThreadsProcess": {
+                "offset": 556,
+                "type": 2147483666
+            }
+        },
+        "_KPRCB": {
+            "MinorVersion": {
+                "offset": 0,
+                "type": 0
+            },
+            "MajorVersion": {
+                "offset": 2,
+                "type": 0
+            },
+            "CurrentThread": {
+                "offset": 4,
+                "type": 2147483661
+            },
+            "NextThread": {
+                "offset": 8,
+                "type": 2147483661
+            },
+            "IdleThread": {
+                "offset": 12,
+                "type": 2147483661
+            }
+        },
+        "_KPCR": {
+            "SelfPcr": {
+                "offset": 28,
+                "type": 2147483663
+            },
+            "Prcb": {
+                "offset": 32,
+                "type": 2147483662
+            },
+            "PrcbData": {
+                "offset": 288,
+                "type": 14
+            }
+        },
+        "_PEB": {
+            "ImageBaseAddress": {
+                "offset": 8,
+                "type": 2147483648
+            },
+            "Ldr": {
+                "offset": 12,
+                "type": 2147483652
+            },
+            "ProcessParameters": {
+                "offset": 16,
+                "type": 2147483655
+            }
+        },
+        "_KPROCESS": {
+            "Header": {
+                "offset": 0,
+                "type": 3
+            },
+            "DirectoryTableBase": {
+                "offset": 24,
+                "type": 0
+            }
+        },
+        "_EPROCESS": {
+            "Pcb": {
+                "offset": 0,
+                "type": 17
+            },
+            "CreateTime": {
+                "offset": 136,
+                "type": 0
+            },
+            "ExitTime": {
+                "offset": 144,
+                "type": 0
+            },
+            "UniqueProcessId": {
+                "offset": 156,
+                "type": 2147483648
+            },
+            "ActiveProcessLinks": {
+                "offset": 160,
+                "type": 1
+            },
+            "VirtualSize": {
+                "offset": 200,
+                "type": 0
+            },
+            "ObjectTable": {
+                "offset": 296,
+                "type": 2147483659
+            },
+            "VadRoot": {
+                "offset": 404,
+                "type": 2147483648
+            },
+            "VadHint": {
+                "offset": 408,
+                "type": 2147483648
+            },
+            "Peb": {
+                "offset": 432,
+                "type": 2147483664
+            },
+            "InheritedFromUniqueProcessId": {
+                "offset": 456,
+                "type": 2147483648
+            },
+            "ImageFileName": {
+                "offset": 508,
+                "type": 0
+            }
+        }
+    }
+}

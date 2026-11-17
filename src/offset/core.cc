@@ -1,31 +1,20 @@
+#include "DOMParsing.h"
 #include "offset/offset.h"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <dlfcn.h>
+#include <filesystem>
+#include <fstream>
+#include <iostream>
+#include <istream>
 #include <libgen.h>
 #include <map>
+#include <stdexcept>
 #include <stdint.h>
-
-// WINDOWS
-#include "profiles/win7_sp0_x64.h"
-#include "profiles/win7_sp0_x86.h"
-#include "profiles/win7_sp1_x64.h"
-#include "profiles/win7_sp1_x86.h"
-#include "profiles/win_2000_x86.h"
-#include "profiles/win_xpsp2_x86.h"
-#include "profiles/win_xpsp3_x86.h"
-
-// LINUX
-#include "profiles/linux3_16_x64.h"
-#include "profiles/linux3_16_x86.h"
+#include <vector>
 
 #define POINTER 0x80000000
-
-typedef uint64_t (*TranslateTypeFunc)(const char*);
-typedef uint64_t (*OffsetOfMemberFunc)(uint64_t tid, const char* mname);
-typedef uint64_t (*TypeOfMemberFunc)(uint64_t tid, const char* mname);
-typedef std::string (*TranslateEnum)(const char* mname, long idx);
 
 struct StructureType {
     uint64_t tid;
@@ -37,13 +26,61 @@ struct StructureType {
 
 const struct StructureType* add_tid_to_map(struct StructureTypeLibrary*, uint64_t);
 
-struct StructureTypeLibrary {
+struct StructureTypeLibrary : Profile {
     std::string profile;
-    TranslateTypeFunc translate;
-    OffsetOfMemberFunc offset_of;
-    TypeOfMemberFunc type_of;
-    TranslateEnum translate_enum;
     std::map<uint64_t, const struct StructureType*> tid_map;
+
+    uint64_t translate(const char* tname)
+    {
+        const std::string tname_str(tname);
+        auto search = TRANSLATE.find(tname_str);
+        if (search != TRANSLATE.end()) {
+            return search->second;
+        }
+        return INVALID_TYPE;
+    }
+
+    uint64_t offset_of(uint64_t tid, const char* mname)
+    {
+        if (tid >= OFFSET.size()) {
+            return INVALID_OFFSET;
+        }
+        const auto& type_offsets = OFFSET[tid];
+        const std::string mname_str(mname);
+        auto search = type_offsets.find(mname_str);
+        if (search != type_offsets.end()) {
+            return search->second.first;
+        }
+        return INVALID_OFFSET;
+    }
+
+    uint64_t type_of(uint64_t tid, const char* mname)
+    {
+        if (tid >= OFFSET.size()) {
+            return INVALID_OFFSET;
+        }
+        const auto& type_offsets = OFFSET[tid];
+        const std::string mname_str(mname);
+        auto search = type_offsets.find(mname_str);
+        if (search != type_offsets.end()) {
+            return search->second.second;
+        }
+        return INVALID_OFFSET;
+    }
+
+    std::string translate_enum(const char* ename, long idx)
+    {
+        auto search = ENUM.find(std::string(ename));
+
+        if (search != ENUM.end()) {
+            auto name = search->second.find(idx);
+            if (name != search->second.end()) {
+                return name->second;
+            }
+        }
+
+        return "unknown";
+    }
 };
 
 const char* get_type_library_profile(const StructureTypeLibrary* tlib)
@@ -65,76 +102,76 @@ const struct StructureType* add_tid_to_map(struct StructureTypeLibrary* tlib,
     return st;
 }
 
+namespace
+{
+
+void deserialize_from_json(StructureTypeLibrary* tlib, std::istream& file)
+{
+    Profile profile;
+    if (!ParseProfile(file, profile)) {
+        throw std::runtime_error("Failed to parse offset profile");
+    }
+
+    tlib->OFFSET = std::move(profile.OFFSET);
+    tlib->TRANSLATE = std::move(profile.TRANSLATE);
+    tlib->ENUM = std::move(profile.ENUM);
+}
+
+// Env override, else relative to the loaded library, else the configure-time path.
+std::filesystem::path profiles_directory()
+{
+    const char* env = std::getenv("LIBOSI_PROFILES_DIR");
+    if (env && *env) {
+        return env;
+    }
+
+    Dl_info info;
+    if (dladdr(reinterpret_cast<void*>(&load_type_library), &info) && info.dli_fname) {
+        std::error_code ec;
+        const auto candidate =
+            std::filesystem::path(info.dli_fname).parent_path() / OFFSET_PROFILES_RELDIR;
+        if (std::filesystem::is_directory(candidate, ec)) {
+            return candidate;
+        }
+    }
+    return OFFSET_PROFILES_DIR;
+}
+
+bool is_plain_profile_name(const std::string& name)
+{
+    return !name.empty() && name.find('/') == std::string::npos &&
+           name.find("..") == std::string::npos;
+}
+
+} // namespace
+
 struct StructureTypeLibrary* load_type_library(const char* profile)
 {
     if (!profile) {
         return nullptr;
     }
 
+    if (!is_plain_profile_name(profile)) {
+        std::cerr << "libosi: invalid offset profile name '" << profile << "'"
+                  << std::endl;
+        return nullptr;
+    }
+
     auto stm = new StructureTypeLibrary();
     stm->profile = std::string(profile);
 
-    // WINDOWS
-    if (strncmp(profile, "win", (size_t)3) == 0) {
-        if (strcmp(profile, "windows-32-7sp0") == 0) {
-            stm->translate = windows_7sp0_x86::translate_type;
-            stm->offset_of = windows_7sp0_x86::offset_of_member;
-            stm->type_of = windows_7sp0_x86::type_of_member;
-            stm->translate_enum = windows_7sp0_x86::translate_enum;
-        } else if (strcmp(profile, "windows-64-7sp0") == 0) {
-            stm->translate = windows_7sp0_x64::translate_type;
-            stm->offset_of = windows_7sp0_x64::offset_of_member;
-            stm->type_of = windows_7sp0_x64::type_of_member;
-            stm->translate_enum = windows_7sp0_x64::translate_enum;
-        } else if (strcmp(profile, "windows-32-7sp1") == 0) {
-            stm->translate = windows_7sp1_x86::translate_type;
-            stm->offset_of = windows_7sp1_x86::offset_of_member;
-            stm->type_of = windows_7sp1_x86::type_of_member;
-            stm->translate_enum = windows_7sp1_x86::translate_enum;
-        } else if (strcmp(profile, "windows-64-7sp1") == 0) {
-            stm->translate = windows_7sp1_x64::translate_type;
-            stm->offset_of = windows_7sp1_x64::offset_of_member;
-            stm->type_of = windows_7sp1_x64::type_of_member;
-            stm->translate_enum = windows_7sp1_x64::translate_enum;
-        } else if (strcmp(profile, "windows-32-xpsp2") == 0) {
-            stm->translate = windows_xpsp2_x86::translate_type;
-            stm->offset_of = windows_xpsp2_x86::offset_of_member;
-            stm->type_of = windows_xpsp2_x86::type_of_member;
-            stm->translate_enum = windows_xpsp2_x86::translate_enum;
-        } else if (strcmp(profile, "windows-32-xpsp3") == 0) {
-            stm->translate = windows_xpsp3_x86::translate_type;
-            stm->offset_of = windows_xpsp3_x86::offset_of_member;
-            stm->type_of = windows_xpsp3_x86::type_of_member;
-            stm->translate_enum = windows_xpsp3_x86::translate_enum;
-        } else if (strcmp(profile, "windows-32-2000") == 0) {
-            stm->translate = windows_2000_x86::translate_type;
-            stm->offset_of = windows_2000_x86::offset_of_member;
-            stm->type_of = windows_2000_x86::type_of_member;
-            stm->translate_enum = windows_2000_x86::translate_enum;
-        } else {
-            delete stm;
-            return nullptr;
-        }
+    const auto profile_path = profiles_directory() / (stm->profile + ".json");
+    std::ifstream profile_file(profile_path);
+
+    if (!profile_file.is_open()) {
+        std::cerr << "libosi: cannot open offset profile " << profile_path << std::endl;
+        delete stm;
+        return nullptr;
     }
-    // Linux 3.16
-    else if (strncmp(profile, "linux", (size_t)5) == 0) {
-        if (strcmp(profile, "linux-32-3.16") == 0) {
-            stm->translate = linux3_16_x86::translate_type;
-            stm->offset_of = linux3_16_x86::offset_of_member;
-            stm->type_of = linux3_16_x86::type_of_member;
-            stm->translate_enum = linux3_16_x86::translate_enum;
-        } else if (strcmp(profile, "linux-64-3.16") == 0) {
-            stm->translate = linux3_16_x64::translate_type;
-            stm->offset_of = linux3_16_x64::offset_of_member;
-            stm->type_of = linux3_16_x64::type_of_member;
-            stm->translate_enum = linux3_16_x64::translate_enum;
-        } else {
-            delete stm;
-            return nullptr;
-        }
-    }
-    // NOT VALID
-    else {
+
+    try {
+        deserialize_from_json(stm, profile_file);
+    } catch (...) {
         delete stm;
         return nullptr;
     }

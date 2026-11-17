@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.21)
 project(libosi)
 include(GNUInstallDirs)
 
@@ -20,6 +20,7 @@ endif()
 
 # find glib and link to it
 find_package(PkgConfig REQUIRED)
+pkg_check_modules(RAPIDJSON_PKG REQUIRED IMPORTED_TARGET RapidJSON)
 pkg_check_modules(GLIB_PKG REQUIRED glib-2.0)
 include_directories(${GLIB_PKG_INCLUDE_DIRS})
 
@@ -52,15 +53,8 @@ target_include_directories(iohal-static PUBLIC
     $<INSTALL_INTERFACE:include>)
 
 set(OFFSET_SRCS src/offset/core.cc
-            src/offset/profiles/win_2000_x86.h src/offset/profiles/win_2000_x86.cpp
-            src/offset/profiles/win_xpsp2_x86.h src/offset/profiles/win_xpsp2_x86.cpp
-            src/offset/profiles/win_xpsp3_x86.h src/offset/profiles/win_xpsp3_x86.cpp
-            src/offset/profiles/win7_sp0_x86.h src/offset/profiles/win7_sp0_x86.cpp
-            src/offset/profiles/win7_sp1_x86.h src/offset/profiles/win7_sp1_x86.cpp
-            src/offset/profiles/win7_sp0_x64.h src/offset/profiles/win7_sp0_x64.cpp
-            src/offset/profiles/win7_sp1_x64.h src/offset/profiles/win7_sp1_x64.cpp
-            src/offset/profiles/linux3_16_x86.h src/offset/profiles/linux3_16_x86.cpp
-            src/offset/profiles/linux3_16_x64.h src/offset/profiles/linux3_16_x64.cpp)
+    src/offset/DOMParsing.cc
+)
 
 # Compile all the .o files once
 add_library(offset-obj OBJECT ${OFFSET_SRCS})
@@ -69,15 +63,26 @@ target_include_directories(offset-obj PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/offset>
     ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set_target_properties(offset-obj PROPERTIES POSITION_INDEPENDENT_CODE 1)
+target_link_libraries(offset-obj PRIVATE PkgConfig::RAPIDJSON_PKG)
+
+set(OFFSET_PROFILES_DIR "${CMAKE_INSTALL_PREFIX}/share/offset/profiles")
+# The same directory relative to the library, for relocated installs
+file(RELATIVE_PATH OFFSET_PROFILES_RELDIR "${CMAKE_INSTALL_FULL_LIBDIR}" "${OFFSET_PROFILES_DIR}")
+target_compile_definitions(offset-obj PRIVATE
+    OFFSET_PROFILES_DIR="${OFFSET_PROFILES_DIR}"
+    OFFSET_PROFILES_RELDIR="${OFFSET_PROFILES_RELDIR}"
+)
 
 # Then package them into a shared library and a static library
 add_library(offset SHARED $<TARGET_OBJECTS:offset-obj>)
+target_link_libraries(offset PRIVATE ${CMAKE_DL_LIBS})
 target_include_directories(offset PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/offset>
     $<INSTALL_INTERFACE:include>)
 
 add_library(offset-static STATIC $<TARGET_OBJECTS:offset-obj>)
+target_link_libraries(offset-static PRIVATE ${CMAKE_DL_LIBS})
 target_include_directories(offset-static PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/offset>
@@ -122,6 +127,12 @@ install(TARGETS osi osi-static offset offset-static iohal iohal-static
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.h")
+
+# Install the offset profiles
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/resources/profiles/"
+    DESTINATION ${OFFSET_PROFILES_DIR}
+    FILES_MATCHING PATTERN "*.json"
+)
 
 if (ENABLE_TESTING)
     include(CTest)
